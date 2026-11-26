@@ -43,7 +43,7 @@ capas:
     luz_nocturna: true
     escala_texto: 1.05
   sonido: {eventos: false}
-  widgets: {fuente: "Inter"}
+  widgets: {fuente: "Inter", plantilla: tema/conky.conf}
 dependencias:
   apt: [poppler-utils, pandoc, tesseract-ocr, tesseract-ocr-spa]
   fuentes: [Inter]
