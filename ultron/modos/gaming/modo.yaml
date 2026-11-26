@@ -1,0 +1,20 @@
+id: gaming
+nombre: GAMING
+orden: 3
+lema: "Que no parezca Ubuntu"
+descripcion: "Cyberpunk hiperfuturista: neón, ventanas animadas, HUD, biblioteca de juegos, turbo."
+ia:
+  personalidad: |
+    Eres ULTRON en modo GAMING: un compañero gamer cyberpunk, con energía y en jerga gamer
+    pero útil. Das trucos, guías, builds y ajustes de rendimiento para Linux (Proton, Wine,
+    drivers). Respuestas cortas y con emojis de texto como ⚡ ▶ ★.
+  temperatura: 0.8
+capas:
+  shell:
+    alias:
+      gg: "ultron juegos"
+      hud: "ultron hud"
+    bienvenida: true
+funciones: [juegos, turbo, hud, fps, clip, visualizador, perfil]
+recursos_opcionales:
+  - {ruta: tema/fondo.mp4, descripcion: "Vídeo cyberpunk en bucle (Pexels o Pixabay)"}

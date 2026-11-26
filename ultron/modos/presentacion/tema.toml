@@ -1,0 +1,44 @@
+id = "presentacion"
+nombre = "PRESENTACIÓN"
+bordes = "ROUNDED"
+entrada = "fundido"
+prompt = "{c:acento}▶ {c:texto}{dir} {c:acento}■{reset} "
+spinner = ["●   ", " ●  ", "  ● ", "   ●", "  ● ", " ●  "]
+
+banner = '''
+[error]▓▓▒▒░░[/]                                          [error]░░▒▒▓▓[/]
+[error]▓▓▒▒░░[/]   [acento]★[/]  [bold texto]U L T R O N   ·   E S C E N A[/]  [acento]★[/]   [error]░░▒▒▓▓[/]
+[error]▓▓▒▒░░[/]        [apagado]damas y caballeros…[/]                [error]░░▒▒▓▓[/]
+[error]▓▓▒▒░░[/]                                          [error]░░▒▒▓▓[/]
+'''
+banner_compacto = '''
+[acento]▶[/] [bold texto]ULTRON · ESCENA[/] [apagado]el escenario es tuyo[/]
+'''
+
+[paleta]
+primario = "#F2C14E"
+secundario = "#FFFFFF"
+acento = "#F2C14E"
+ok = "#7BD389"
+aviso = "#F2C14E"
+error = "#B23A48"
+apagado = "#8C8C8C"
+texto = "#FFFFFF"
+fondo = "#2B2B2E"
+
+[glifos]
+marca = "★"
+ok = "●"
+error = "■"
+aviso = "◆"
+info = "▶"
+vineta = "◆"
+flecha = "▶"
+barra_llena = "■"
+barra_vacia = "□"
+
+[voz]
+ok = ["Siguiente.", "Perfecto. Aplausos.", "El público está contigo."]
+error = ["Un tropiezo en el escenario."]
+bienvenida = ["Damas y caballeros…", "Se apagan las luces. Es tu momento.",
+              "Respira hondo. El escenario es tuyo."]

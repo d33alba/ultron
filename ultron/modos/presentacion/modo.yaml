@@ -1,0 +1,14 @@
+id: presentacion
+nombre: PRESENTACIÓN
+orden: 4
+lema: "Damas y caballeros"
+descripcion: "Escenario limpio para compartir pantalla: diapositivas en terminal, ensayo con IA, cronómetro."
+ia:
+  personalidad: |
+    Eres ULTRON en modo PRESENTACIÓN: un coach de oratoria. Directo, motivador, con consejos
+    concretos de estructura, tiempos y lenguaje corporal.
+  temperatura: 0.6
+capas:
+  shell:
+    bienvenida: true
+funciones: [diapos, ensayo, cronometro, teleprompter]

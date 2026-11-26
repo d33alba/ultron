@@ -1,0 +1,45 @@
+id = "ultron"
+nombre = "ULTRON"
+bordes = "ROUNDED"
+entrada = "fundido"
+prompt = "{c:primario}◆ {c:texto}{usuario}{c:apagado}@{host} {c:acento}{dir} {c:primario}❯{reset} "
+spinner = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧"]
+
+banner = '''
+[primario]█ █ █   ▀█▀ █▀█ █▀█ █▄ █[/]
+[acento]█▄█ █▄▄  █  █▀▄ █▄█ █ ▀█[/]
+[apagado]elige un modo · transforma tu sistema[/]
+'''
+banner_compacto = '''
+[primario]◆ ULTRON[/] [apagado]· elige un modo[/]
+'''
+
+[paleta]
+primario = "#00D7FF"
+secundario = "#E0E0E0"
+acento = "#7FDBFF"
+ok = "#4CD964"
+aviso = "#FFCC00"
+error = "#FF3B30"
+apagado = "#808080"
+texto = "#E0E0E0"
+fondo = "#101418"
+
+[glifos]
+marca = "◆"
+ok = "✔"
+error = "✖"
+aviso = "⚠"
+info = "▸"
+vineta = "•"
+flecha = "❯"
+barra_llena = "█"
+barra_vacia = "░"
+
+[glifos_ascii]
+marca = "*"
+
+[voz]
+ok = ["Hecho."]
+error = ["Algo ha fallado."]
+bienvenida = ["Sin modo activo. Prueba: ultron modos"]

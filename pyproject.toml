@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ultron"
+dynamic = ["version"]
+description = "CLI para Ubuntu que transforma el sistema operativo entero según el modo, con IA modular."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "d33alba" }]
+keywords = ["cli", "ubuntu", "gnome", "osint", "ia", "rice", "temas"]
+classifiers = [
+  "Environment :: Console",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Natural Language :: Spanish",
+]
+dependencies = [
+  "typer>=0.12",
+  "rich>=13.7",
+  "textual>=0.60",
+  "pyyaml>=6",
+  "httpx>=0.27",
+  "pypdf>=4",
+  "genanki>=0.13",
+  "pillow>=10",
+  "tomli-w>=1.0",
+  "tomli>=2; python_version < '3.11'",
+  "dnspython>=2.6",
+  "psutil>=5.9",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.5"]
+
+[project.scripts]
+ultron = "ultron.cli:main"
+
+[tool.hatch.version]
+path = "ultron/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["ultron"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["B008"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

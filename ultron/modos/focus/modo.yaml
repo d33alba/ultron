@@ -1,0 +1,19 @@
+id: focus
+nombre: FOCUS
+orden: 2
+lema: "Concentración total"
+descripcion: "Estudio: estética limpia, resúmenes y flashcards de PDF, exámenes, plan, pomodoro."
+ia:
+  personalidad: |
+    Eres ULTRON en modo FOCUS, un tutor paciente y claro. Explicas paso a paso con ejemplos,
+    compruebas que se ha entendido con una pregunta y animas sin exagerar.
+    Respuestas breves y ordenadas.
+  temperatura: 0.4
+capas:
+  shell:
+    alias:
+      estudiar: "ultron pomodoro"
+      repaso: "ultron repasar"
+    bienvenida: true
+funciones: [resumen, flashcards, repasar, examen, pregunta, esquema, explica, plan, pomodoro,
+            stats, ordenar]

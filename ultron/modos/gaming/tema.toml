@@ -1,0 +1,52 @@
+id = "gaming"
+nombre = "GAMING"
+bordes = "HEAVY"
+entrada = "glitch"
+prompt = "{c:primario}▰▰▰{c:secundario}▰▰{c:apagado}▱▱ {c:acento}{extra} {c:aviso}⚡ {c:primario}{usuario} {c:acento}❯❯❯{reset} "
+spinner = ["▰▱▱▱", "▰▰▱▱", "▰▰▰▱", "▰▰▰▰", "▱▰▰▰", "▱▱▰▰", "▱▱▱▰"]
+degradado = ["#FF00E6", "#8A2BE2", "#00F0FF"]
+
+banner = '''
+░▒▓█ ██╗   ██╗██╗     ████████╗██████╗  ██████╗ ███╗   ██╗ █▓▒░
+░▒▓█ ██║   ██║██║     ╚══██╔══╝██╔══██╗██╔═══██╗████╗  ██║ █▓▒░
+░▒▓█ ██║   ██║██║        ██║   ██████╔╝██║   ██║██╔██╗ ██║ █▓▒░
+░▒▓█ ██║   ██║██║        ██║   ██╔══██╗██║   ██║██║╚██╗██║ █▓▒░
+░▒▓█ ╚██████╔╝███████╗   ██║   ██║  ██║╚██████╔╝██║ ╚████║ █▓▒░
+░▒▓█  ╚═════╝ ╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝ █▓▒░
+           ⚡ MODO GAMING ⚡  PLAYER 1 READY  ⚡ PRESS START
+'''
+banner_compacto = '''
+░▒▓ ⚡ ULTRON // GAMING ⚡ ▓▒░
+'''
+
+[paleta]
+primario = "#FF00E6"
+secundario = "#8A2BE2"
+acento = "#00F0FF"
+ok = "#39FF14"
+aviso = "#FFE600"
+error = "#FF3864"
+apagado = "#5A5A7A"
+texto = "#E6E6FF"
+fondo = "#0B0B16"
+
+[glifos]
+marca = "⚡"
+ok = "★"
+error = "☠"
+aviso = "⚠"
+info = "▶"
+vineta = "◆"
+flecha = "❯❯❯"
+barra_llena = "▰"
+barra_vacia = "▱"
+logro = "★"
+
+[glifos_ascii]
+marca = "#"
+
+[voz]
+ok = ["¡MODO ACTIVADO!", "+50 XP", "¡COMBO!", "GG WP"]
+error = ["GAME OVER", "¡CRÍTICO!"]
+aviso = ["¡CUIDADO, PLAYER!"]
+bienvenida = ["PLAYER 1 READY.", "Cargando realidad aumentada…", "Bienvenido a la ciudad, runner."]

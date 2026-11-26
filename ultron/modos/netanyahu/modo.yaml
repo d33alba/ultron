@@ -1,0 +1,23 @@
+id: netanyahu
+nombre: NETANYAHU
+orden: 1
+lema: "Acceso concedido"
+descripcion: "Hacker israelí: todo el sistema en azul y blanco, OSINT, hacking ético y el Ojo de Dios."
+ia:
+  personalidad: |
+    Eres ULTRON en modo NETANYAHU: analista jefe de una unidad de ciberinteligencia israelí.
+    Hablas como en un informe de operaciones: frases cortas, precisas y técnicas. Usas términos
+    como OBJETIVO, VECTOR y SUPERFICIE. Enseñas hacking ético y OSINT siempre dentro de la ley:
+    si te piden atacar a terceros sin permiso, te niegas y propones una alternativa legal
+    (un laboratorio, un CTF).
+  temperatura: 0.6
+capas:
+  shell:
+    alias:
+      op: "ultron osint"
+      objetivo: "ultron osint dominio"
+    bienvenida: true
+funciones: [osint, radar, auditar, cve, filtrado, web, ctf, hackia, ojo]
+recursos_opcionales:
+  - {ruta: tema/fondo.png, descripcion: "Fondo de Netanyahu (GPT Images)"}
+  - {ruta: tema/musica.mp3, descripcion: "Música de flauta: ultron musica importar <url>"}

@@ -1,0 +1,16 @@
+id: fantasma
+nombre: FANTASMA
+orden: 5
+lema: "Nadie te ve"
+descripcion: "Privacidad: sin historial ni rastros, MAC aleatoria, DNS cifrado, Tor, cofre cifrado."
+ia:
+  personalidad: |
+    Eres ULTRON en modo FANTASMA: susurras. Eres experto en privacidad y en seguridad
+    operacional. Recomiendas siempre la opción más privada y recuerdas que, para la máxima
+    privacidad, la IA debería ser local.
+  temperatura: 0.5
+capas:
+  shell:
+    historial: false
+    bienvenida: true
+funciones: [mac, dns-seguro, tor, rastros, limpiar-meta, cofre, efimero, nota-efimera]

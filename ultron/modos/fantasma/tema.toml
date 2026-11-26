@@ -1,0 +1,48 @@
+id = "fantasma"
+nombre = "FANTASMA"
+bordes = "MINIMAL"
+entrada = "fundido"
+prompt = "{c:apagado}◌ anónimo {c:texto}{dir} {c:apagado}⋯{reset} "
+spinner = ["◌", "◍", "◎", "◍"]
+
+banner = '''
+[apagado]       ░░░[/]
+[texto]      .-''-.[/]
+[texto]     ( o  o )[/]       [texto]u l t r o n[/]
+[texto]     |  ‿   |[/]       [apagado]· · · fantasma · · ·[/]
+[apagado]     | ░  ░ |[/]
+[apagado]      ░░░░░░[/]       [apagado]nadie te ve…[/]
+[apagado]       ░ ░ ░[/]
+'''
+banner_compacto = '''
+[apagado]◌[/] [texto]ultron · fantasma[/] [apagado]nadie te ve…[/]
+'''
+
+[paleta]
+primario = "#E8E8E8"
+secundario = "#BDBDBD"
+acento = "#BDBDBD"
+ok = "#D0D0D0"
+aviso = "#A0A0A0"
+error = "#9E6B6B"
+apagado = "#5A5A5A"
+texto = "#E8E8E8"
+fondo = "#000000"
+
+[glifos]
+marca = "◌"
+ok = "·"
+error = "✝"
+aviso = "⋯"
+info = "·"
+vineta = "·"
+flecha = "⋯"
+barra_llena = "▓"
+barra_vacia = "░"
+
+[voz]
+ok = ["hecho… sin dejar rastro.", "listo… nadie lo sabrá."]
+error = ["algo ha dejado huella…"]
+aviso = ["cuidado… te observan."]
+bienvenida = ["aquí no queda nada…", "sin historial. sin huellas. sin nombre…",
+              "shh… estás en modo fantasma."]

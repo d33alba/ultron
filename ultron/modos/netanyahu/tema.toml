@@ -1,0 +1,57 @@
+id = "netanyahu"
+nombre = "NETANYAHU"
+bordes = "DOUBLE"
+entrada = "escritura"
+prompt = "{c:primario}✡ {c:secundario}{usuario}{c:primario}@{c:secundario}netanyahu {c:primario}▸ {c:apagado}{dir} {c:acento}{extra}{c:primario} ❯{reset} "
+spinner = ["◜", "◝", "◞", "◟"]
+
+# Las líneas que acaban en barra invertida no llevan [/] (la barra escaparía la etiqueta).
+banner = '''
+[secundario]          /\
+[secundario]     ____/__\____     [bold primario]█ █ █   ▀█▀ █▀█ █▀█ █▄ █[/]
+[secundario]     \  /    \  /     [bold primario]█▄█ █▄▄  █  █▀▄ █▄█ █ ▀█[/]
+[secundario]      \/      \/
+[secundario]      /\      /\      [bold secundario]M O D O   N E T A N Y A H U[/]
+[secundario]     /__\____/__\     [acento]שלום · ACCESO CONCEDIDO[/]
+[secundario]         \  /
+[secundario]          \/          [apagado]CLASIFICACIÓN: ALTO SECRETO · SESIÓN 0x7F3A[/]
+'''
+banner_compacto = '''
+[bold primario]✡ ULTRON[/] [secundario]// NETANYAHU[/] [apagado]· acceso concedido[/]
+'''
+
+[paleta]
+primario = "#2F6BFF"
+secundario = "#FFFFFF"
+acento = "#6EA8FE"
+ok = "#8EC5FF"
+aviso = "#FFD166"
+error = "#E63946"
+apagado = "#8A94A6"
+texto = "#E8EEFF"
+fondo = "#0A1A3F"
+bandera = "#0038B8"
+
+[glifos]
+marca = "✡"
+ok = "✔"
+error = "✖"
+aviso = "⚠"
+info = "▸"
+vineta = "▸"
+objetivo = "◉"
+flecha = "❯"
+barra_llena = "█"
+barra_vacia = "░"
+
+[glifos_ascii]
+marca = "*"
+objetivo = "@"
+
+[voz]
+ok = ["OPERACIÓN COMPLETADA.", "OBJETIVO ANALIZADO.", "MISIÓN CUMPLIDA."]
+error = ["OPERACIÓN ABORTADA.", "FALLO EN EL VECTOR."]
+aviso = ["PRECAUCIÓN, AGENTE."]
+bienvenida = ["Bienvenido, agente. Todas las comunicaciones están cifradas.",
+              "Shalom, agente. El radar está activo.",
+              "Sesión clasificada iniciada. Identifique su objetivo."]

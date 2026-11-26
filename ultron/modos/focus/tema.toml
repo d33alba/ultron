@@ -1,0 +1,53 @@
+id = "focus"
+nombre = "FOCUS"
+bordes = "ROUNDED"
+entrada = "fundido"
+prompt = "{c:acento}{extra} {c:apagado}· {c:texto}{dir} {c:apagado}›{reset} "
+spinner = ["·  ", "·· ", "···", " ··", "  ·", "   "]
+
+banner = '''
+
+[texto]        f o c u s[/]
+[apagado]        ─────────────[/]
+[texto]        u l t r o n[/]
+
+[apagado]        "lo que haces cada día importa más[/]
+[apagado]         que lo que haces de vez en cuando."[/]
+
+'''
+banner_compacto = '''
+[texto]· focus ·[/] [apagado]respira. empieza.[/]
+'''
+
+[paleta]
+primario = "#A8B5A2"
+secundario = "#C8C8C8"
+acento = "#8FBC8F"
+ok = "#8FBC8F"
+aviso = "#D9A441"
+error = "#C97064"
+apagado = "#6B6B6B"
+texto = "#C8C8C8"
+fondo = "#1E1F22"
+
+[glifos]
+marca = "·"
+ok = "✓"
+error = "×"
+aviso = "!"
+info = "›"
+vineta = "·"
+flecha = "›"
+barra_llena = "━"
+barra_vacia = "─"
+progreso = "○◔◑◕●"
+
+[glifos_ascii]
+marca = "."
+
+[voz]
+ok = ["hecho.", "bien.", "listo. sigue así."]
+error = ["algo no ha ido bien."]
+aviso = ["ojo."]
+bienvenida = ["un paso cada vez.", "25 minutos. empieza cuando quieras.",
+              "silencio. solo tú y lo que aprendes."]

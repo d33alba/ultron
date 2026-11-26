@@ -1,0 +1,330 @@
+"""CLI raíz de Ultron."""
+
+from __future__ import annotations
+
+import importlib
+import pkgutil
+import sys
+from typing import Any
+
+import typer
+from rich.text import Text
+
+from ultron import __version__
+from ultron.nucleo import estado, motor, registro
+from ultron.nucleo.doctor import OpcionesDoctor
+from ultron.nucleo.doctor import ejecutar as ejecutar_doctor
+from ultron.nucleo.ejecutor import Ejecutor, ErrorEjecucion
+from ultron.nucleo.esquema import ErrorEsquema
+from ultron.ui import animaciones, banner, tema
+
+app = typer.Typer(
+    name="ultron",
+    help="Transforma Ubuntu entero según el modo: estética, terminal, sonidos, IA y funciones.",
+    no_args_is_help=False,
+    add_completion=True,
+    rich_markup_mode="rich",
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
+
+GLOBAL: dict[str, Any] = {"simular": False}
+
+
+def _version(valor: bool) -> None:
+    if valor:
+        tema.actual().consola.print(f"Ultron {__version__}")
+        raise typer.Exit()
+
+
+@app.callback(invoke_without_command=True)
+def raiz(
+    ctx: typer.Context,
+    simular: bool = typer.Option(False, "--simular", help="Enseña los cambios sin hacerlos."),
+    sin_animaciones: bool = typer.Option(False, "--sin-animaciones", help="Sin animaciones."),
+    sin_color: bool = typer.Option(False, "--sin-color", help="Sin colores."),
+    version: bool = typer.Option(
+        False, "--version", "-V", callback=_version, is_eager=True, help="Versión de Ultron."
+    ),
+) -> None:
+    """Ultron: elige un modo y tu sistema se convierte en otro."""
+    GLOBAL["simular"] = simular
+    tema.configurar(sin_animaciones=sin_animaciones, sin_color=sin_color)
+    if ctx.invoked_subcommand is None:
+        if sys.stdin.isatty() and sys.stdout.isatty():
+            try:
+                from ultron.ui.selector import abrir_selector
+            except ImportError:
+                pass
+            else:
+                abrir_selector()
+                return
+        tema.actual().consola.print(ctx.get_help())
+
+
+# --- modos -------------------------------------------------------------------
+
+
+@app.command("modos")
+def cmd_modos(
+    detalle: str = typer.Option(None, "--detalle", "-d", help="Enseña un modo en detalle."),
+) -> None:
+    """Lista los modos disponibles, cada uno con su propio estilo."""
+    t = tema.actual()
+    c = t.consola
+    if detalle:
+        _detalle_modo(detalle)
+        return
+    activo = estado.modo_activo()
+    tabla = t.tabla("", "Modo", "Lema", "Funciones", titulo="Modos de Ultron")
+    for modo in registro.listar():
+        tm = tema.cargar_tema(modo.id)
+        color = tm.paleta.get("primario", "")
+        acento = tm.paleta.get("acento", "")
+        nombre = Text(modo.nombre, style=f"bold {color}")
+        if modo.id == activo:
+            nombre.append("  ● ACTIVO", style=f"bold {acento}")
+        funciones = ", ".join(modo.funciones[:6]) + ("…" if len(modo.funciones) > 6 else "")
+        tabla.add_row(
+            Text(tm.glifo("marca"), style=color),
+            nombre,
+            Text(modo.lema, style=acento),
+            Text(funciones or "—", style="apagado"),
+        )
+    c.print(tabla)
+    c.print("[apagado]Entra en uno con:[/] [acento]ultron entrar <modo>[/]  "
+            "[apagado]· detalle:[/] [acento]ultron modos -d <modo>[/]")
+
+
+def _detalle_modo(id_modo: str) -> None:
+    modo = registro.obtener(id_modo)
+    tm = tema.cargar_tema(modo.id)
+    banner.mostrar_banner(tm, animado=False)
+    c = tm.consola
+    c.print(f"\n[bold primario]{modo.nombre}[/] [apagado]·[/] [acento]{modo.lema}[/]")
+    c.print(f"[texto]{modo.descripcion}[/]\n")
+    tabla = tm.tabla("Capa", "Qué cambia")
+    clases, desconocidas = motor.capas_del_modo(modo)
+    for cls in clases:
+        tabla.add_row(cls.nombre, cls.descripcion or "—")
+    for nombre in desconocidas:
+        tabla.add_row(nombre, "[apagado](llega en una versión posterior)[/]")
+    c.print(tabla)
+    if modo.funciones:
+        c.print("[bold acento]Funciones:[/] " + ", ".join(modo.funciones))
+
+
+# --- entrar / salir / estado --------------------------------------------------
+
+_ICONOS = {"aplicada": "ok", "restaurada": "ok", "saltada": "aviso", "fallida": "error"}
+
+
+def _imprimir_progreso(t: tema.Tema):
+    def progreso(capa: str, est: str) -> None:
+        if est not in _ICONOS:
+            return
+        estilo = {"ok": "ok", "aviso": "aviso", "error": "error"}[_ICONOS[est]]
+        g = t.glifo(_ICONOS[est])
+        t.consola.print(f"  [acento]{t.glifo('info')}[/] {capa:<12} [{estilo}]{g} {est}[/]")
+
+    return progreso
+
+
+def _lista(valor: str | None) -> list[str] | None:
+    return [v.strip() for v in valor.split(",")] if valor else None
+
+
+@app.command("entrar")
+def cmd_entrar(
+    id_modo: str = typer.Argument(..., help="Modo: netanyahu, focus, gaming, presentacion…"),
+    simular: bool = typer.Option(False, "--simular", help="Enseña los cambios sin hacerlos."),
+    solo: str = typer.Option(None, "--solo", help="Solo estas capas (separadas por comas)."),
+    excepto: str = typer.Option(None, "--excepto", help="Todas menos estas capas."),
+    sin_sudo: bool = typer.Option(False, "--sin-sudo", help="Salta las capas que piden sudo."),
+    si: bool = typer.Option(False, "--si", "-y", help="No preguntes: acepta todo."),
+) -> None:
+    """Transforma el sistema con un modo."""
+    simular = simular or GLOBAL["simular"]
+    modo = registro.obtener(id_modo)
+    viejo_id = estado.modo_activo()
+    viejo = tema.cargar_tema(viejo_id) if viejo_id else None
+    nuevo = tema.cargar_tema(modo.id)
+    animaciones.transicion(viejo, nuevo)
+    c = nuevo.consola
+    if simular:
+        c.print(f"[aviso]Simulación del modo {modo.nombre}: no se cambia nada.[/]")
+    else:
+        c.print(f"[bold primario]{nuevo.glifo('marca')} Entrando en {modo.nombre}…[/]")
+
+    def confirmar(capas: list[str]) -> bool:
+        if si:
+            return True
+        return typer.confirm(
+            f"Las capas {', '.join(capas)} necesitan permisos de administrador (sudo). ¿Seguir?",
+            default=True,
+        )
+
+    ej = Ejecutor(simular=simular, consola=c)
+    motor.entrar(
+        modo.id, ej=ej, solo=_lista(solo), excepto=_lista(excepto), sin_sudo=sin_sudo,
+        confirmar_sudo=confirmar, progreso=_imprimir_progreso(nuevo), consola=c,
+    )
+    if simular:
+        c.print(f"[apagado]{len(ej.historial)} operaciones simuladas.[/]")
+        return
+    tema.invalidar()
+    final = tema.cargar_tema(modo.id)
+    final.consola.print()
+    banner.mostrar_banner(final)
+    final.consola.print(f"\n[acento]{final.frase('ok', 'Modo activado.')}[/]")
+    final.consola.print("[apagado]Abre una terminal nueva para ver el prompt del modo. "
+                        "Para deshacerlo todo: ultron salir[/]")
+
+
+@app.command("salir")
+def cmd_salir(
+    simular: bool = typer.Option(False, "--simular", help="Enseña los cambios sin hacerlos."),
+) -> None:
+    """Sale del modo activo y deja el sistema exactamente como estaba."""
+    simular = simular or GLOBAL["simular"]
+    t = tema.actual()
+    c = t.consola
+    if not motor.leer_instantanea():
+        t.info("No hay ningún modo activo.")
+        return
+    ej = Ejecutor(simular=simular, consola=c)
+    resultados = motor.salir(ej=ej, progreso=_imprimir_progreso(t), consola=c)
+    fallidas = [r for r in resultados if r.estado == "fallida"]
+    t2 = tema.actual()
+    if fallidas:
+        for r in fallidas:
+            t2.error(f"{r.nombre}: {r.motivo}")
+        raise typer.Exit(1)
+    t2.ok("Sistema restaurado." if not simular else "Simulación de salida completa.")
+
+
+@app.command("estado")
+def cmd_estado() -> None:
+    """Muestra el modo activo y qué capas ha cambiado."""
+    t = tema.actual()
+    datos = estado.leer()
+    activo = datos.get("modo_activo")
+    if not activo:
+        t.info("Sin modo activo. Prueba: [acento]ultron modos[/]")
+        if motor.leer_instantanea():
+            t.aviso("Hay una instantánea pendiente: ejecuta [acento]ultron salir[/] "
+                    "para restaurar.")
+        return
+    tabla = t.tabla("Capa", "Estado", "Detalle")
+    for capa in datos.get("capas", []):
+        tabla.add_row(capa.get("nombre", ""), capa.get("estado", ""), capa.get("motivo", ""))
+    modo = registro.obtener(activo)
+    t.consola.print(t.panel(
+        f"[bold primario]{modo.nombre}[/] [apagado]desde {datos.get('desde', '?')}[/]",
+        titulo="Modo activo",
+    ))
+    t.consola.print(tabla)
+
+
+# --- doctor / bienvenida / prompt --------------------------------------------
+
+
+@app.command("doctor")
+def cmd_doctor(
+    sin_ia: bool = typer.Option(False, "--sin-ia", help="No pruebes la conexión con la IA."),
+    completo: bool = typer.Option(False, "--completo", help="Revisa también las dependencias."),
+) -> None:
+    """Diagnostica el sistema, las dependencias, los recursos y la IA."""
+    t = tema.actual()
+    with t.spinner_ctx("Revisando el sistema"):
+        resultados = ejecutar_doctor(Ejecutor(), OpcionesDoctor(sin_ia=sin_ia, completo=completo))
+    tabla = t.tabla("", "Comprobación", "Resultado", "Solución", titulo="Ultron doctor")
+    estilos = {"ok": ("ok", "ok"), "aviso": ("aviso", "aviso"), "error": ("error", "error")}
+    for r in resultados:
+        glifo, estilo = estilos.get(r.estado, ("info", "texto"))
+        tabla.add_row(f"[{estilo}]{t.glifo(glifo)}[/]", r.nombre, r.detalle, r.solucion)
+    t.consola.print(tabla)
+    errores = sum(r.estado == "error" for r in resultados)
+    avisos = sum(r.estado == "aviso" for r in resultados)
+    if errores:
+        t.error(f"{errores} errores y {avisos} avisos.")
+        raise typer.Exit(1)
+    t.ok("Listo ✔" if not avisos else f"Funciona, con {avisos} avisos.")
+
+
+@app.command("bienvenida", hidden=True)
+def cmd_bienvenida() -> None:
+    t = tema.actual()
+    banner.mostrar_banner(t, animado=False, compacto=True)
+    frase = t.frase("bienvenida")
+    if frase:
+        t.consola.print(f"[apagado]{frase}[/]")
+
+
+@app.command("prompt-extra", hidden=True)
+def cmd_prompt_extra() -> None:
+    from ultron.prompt_extra import texto
+
+    sys.stdout.write(texto())
+
+
+# --- registro de módulos -----------------------------------------------------
+
+
+def _fusionar(sub: typer.Typer) -> None:
+    existentes = {c.name for c in app.registered_commands if c.name}
+    for comando in sub.registered_commands:
+        nombre = comando.name or (comando.callback.__name__ if comando.callback else None)
+        if nombre in existentes:
+            continue
+        app.registered_commands.append(comando)
+    app.registered_groups.extend(sub.registered_groups)
+
+
+def _registrar_modulos() -> None:
+    try:
+        import ultron.compartidas as compartidas
+    except ImportError:
+        compartidas = None
+    if compartidas is not None:
+        for info in pkgutil.iter_modules(compartidas.__path__):
+            modulo = importlib.import_module(f"ultron.compartidas.{info.name}")
+            if isinstance(getattr(modulo, "app", None), typer.Typer):
+                _fusionar(modulo.app)
+    for modo in registro.listar():
+        try:
+            modulo = importlib.import_module(f"ultron.modos.{modo.id}.funciones")
+        except ImportError:
+            continue
+        if isinstance(getattr(modulo, "app", None), typer.Typer):
+            _fusionar(modulo.app)
+
+
+_registrar_modulos()
+
+
+def _errores_conocidos() -> tuple[type[BaseException], ...]:
+    tipos: list[type[BaseException]] = [
+        motor.ErrorMotor, registro.ModoNoEncontrado, ErrorEsquema, ErrorEjecucion,
+    ]
+    try:
+        from ultron.ia.errores import IAError
+    except ImportError:
+        pass
+    else:
+        tipos.append(IAError)
+    return tuple(tipos)
+
+
+def main() -> None:
+    try:
+        app()
+    except _errores_conocidos() as e:
+        t = tema.actual()
+        t.error(str(e))
+        sugerencia = getattr(e, "sugerencia", "")
+        if sugerencia:
+            t.info(sugerencia)
+        sys.exit(2 if type(e).__name__ == "IANoConfigurada" else 1)
+    except KeyboardInterrupt:
+        tema.actual().consola.print("\n[apagado]Cancelado.[/]")
+        sys.exit(130)
