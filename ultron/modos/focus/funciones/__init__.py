@@ -514,7 +514,12 @@ def cmd_pomodoro(
     campana = registro.obtener("focus").recurso("tema/sonidos/campana.wav")
     prog = reproductor_efecto(ej)
 
-    def sonar(_fase: pomodoro.Fase) -> None:
+    completados = 0
+
+    def sonar(fase: pomodoro.Fase) -> None:
+        nonlocal completados
+        if fase.nombre == "trabajo":
+            completados += 1
         if campana.exists() and prog:
             ej.run([*prog, str(campana)], check=False, fondo=True)
 
@@ -532,6 +537,11 @@ def cmd_pomodoro(
             con.execute("insert into sesiones(asignatura, inicio, minutos) values (?, ?, ?)",
                         (asignatura or "general", inicio.isoformat(timespec="seconds"),
                          round(trabajados, 1)))
+    if completados and not ej.simular:
+        from ultron.nucleo import xp
+
+        for _ in range(completados):
+            xp.registrar("pomodoro_completado")
     t.ok(f"{trabajados:.0f} minutos de concentración. webs desbloqueadas.")
 
 

@@ -40,7 +40,7 @@ class CapaSonido(Capa):
             for f in origen.iterdir():
                 if f.suffix.lower() in EXTENSIONES_AUDIO:
                     self.ej.copiar(f, destino / "stereo" / f.name)
-        if self.ctx.modo.id == "netanyahu":
+        if self.ctx.modo.id in {"netanyahu", "gaming"}:
             for nombre in ("message-new-instant.wav", "dialog-error.wav"):
                 if not any((origen / nombre).with_suffix(e).is_file() for e in EXTENSIONES_AUDIO):
                     archivo = self.ctx.respaldo(f"tema/sonidos/stereo/{nombre}", self.ej)
@@ -67,6 +67,10 @@ class CapaSonido(Capa):
             self.ej.run([*prog, str(entrada)], check=False, fondo=True)
 
     def restaurar(self, previo: dict) -> None:
+        if self.ctx.modo.id == "gaming" and not self.ej.simular:
+            salida = self.ctx.respaldo("tema/sonidos/salida.wav", self.ej)
+            if prog := reproductor_efecto(self.ej):
+                self.ej.run([*prog, str(salida)], check=False, fondo=True)
         C.restaurar_claves(self.ej, previo.get("claves", {}))
         self.ej.borrar(self._dir())
 

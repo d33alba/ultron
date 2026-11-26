@@ -33,6 +33,9 @@ def _colores(p: dict[str, str], oscuro: bool = True) -> dict[str, str]:
 
 def css_gtk4(p: dict[str, str], oscuro: bool = True) -> str:
     c = _colores(p, oscuro)
+    hover = f"button:hover {{ border-color: {c['acento2']}; }}\n" if (
+        p.get("primario") == "#FF00E6"
+    ) else ""
     return f"""/* Generado por Ultron. Se restaura al salir del modo. */
 @define-color accent_color {c['acento2']};
 @define-color accent_bg_color {c['accent']};
@@ -58,13 +61,16 @@ def css_gtk4(p: dict[str, str], oscuro: bool = True) -> str:
 
 headerbar {{ border-bottom: 1px solid {c['borde']}; }}
 button.suggested-action {{ background-color: {c['accent']}; color: {c['accent_fg']}; }}
-selection, *:selected {{ background-color: alpha({c['accent']}, 0.55); }}
+{hover}selection, *:selected {{ background-color: alpha({c['accent']}, 0.55); }}
 """
 
 
 def css_gtk3(p: dict[str, str], oscuro: bool = True) -> str:
     c = _colores(p, oscuro)
     base = "Adwaita/gtk-contained-dark.css" if oscuro else "Adwaita/gtk-contained.css"
+    hover = f"button:hover {{ border-color: {c['acento2']}; }}\n" if (
+        p.get("primario") == "#FF00E6"
+    ) else ""
     return f"""/* Generado por Ultron. */
 @import url("resource:///org/gtk/libgtk/theme/{base}");
 @define-color theme_bg_color {c['window_bg']};
@@ -79,7 +85,7 @@ window, .background {{ background-color: {c['window_bg']}; color: {c['window_fg'
 headerbar, .titlebar {{ background: {c['headerbar_bg']}; color: {c['headerbar_fg']};
   border-bottom: 1px solid {c['borde']}; }}
 .sidebar, placessidebar {{ background-color: {c['sidebar_bg']}; }}
-*:selected, selection {{ background-color: {c['accent']}; color: {c['accent_fg']}; }}
+{hover}*:selected, selection {{ background-color: {c['accent']}; color: {c['accent_fg']}; }}
 button.suggested-action {{ background: {c['accent']}; color: {c['accent_fg']}; }}
 """
 
@@ -87,19 +93,29 @@ button.suggested-action {{ background: {c['accent']}; color: {c['accent_fg']}; }
 def css_shell(p: dict[str, str], oscuro: bool = True, brillo: bool = False) -> str:
     c = _colores(p, oscuro)
     panel = C.oscurecer(c["window_bg"], 0.2)
+    neon = brillo and p.get("primario") == "#FF00E6"
+    if neon:
+        panel = "rgba(0, 0, 0, 0.78)"
+    hover = c['acento2'] if neon else c['accent']
     resplandor = f"box-shadow: 0 0 12px {c['acento2']};" if brillo else ""
+    degradado = (
+        f"#panel {{ background-gradient-direction: vertical; "
+        f"background-gradient-start: {panel}; "
+        f"background-gradient-end: {c['headerbar_bg']}; "
+        f"box-shadow: inset 0 -2px 4px {c['acento2']}; }}\n" if neon else ""
+    )
     return f"""/* Tema de GNOME Shell generado por Ultron. */
 @import url("resource:///org/gnome/shell/theme/gnome-shell.css");
 @import url("resource:///org/gnome/shell/theme/gnome-shell-dark.css");
 
 #panel {{ background-color: {panel}; border-bottom: 2px solid {c['accent']}; {resplandor} }}
-#panel .panel-button {{ color: {c['window_fg']}; }}
+{degradado}#panel .panel-button {{ color: {c['window_fg']}; }}
 #panel .panel-button:hover, #panel .panel-button:active {{
-  background-color: alpha({c['accent']}, 0.35); color: #ffffff; }}
+  background-color: alpha({hover}, 0.35); color: #ffffff; }}
 .popup-menu-content, .candidate-popup-content {{
   background-color: {c['popover_bg']}; color: {c['window_fg']};
   border: 1px solid {c['borde']}; {resplandor} }}
-.popup-menu-item:hover, .popup-menu-item:focus {{ background-color: alpha({c['accent']}, 0.4); }}
+.popup-menu-item:hover, .popup-menu-item:focus {{ background-color: alpha({hover}, 0.4); }}
 .quick-settings {{ background-color: {c['popover_bg']}; border: 1px solid {c['borde']}; }}
 .quick-toggle:checked {{ background-color: {c['accent']}; color: {c['accent_fg']}; }}
 #dash .dash-background {{ background-color: alpha({c['window_bg']}, 0.85);

@@ -69,7 +69,14 @@ def cmd_instalar(
     c = t.consola
     ej = Ejecutor(simular=simular, consola=c)
     plan = dependencias.plan(modo or None)
-    faltan_apt = [] if sin_apt else dependencias.apt_faltan(ej, plan.apt)
+    paquetes = plan.apt.copy()
+    if not sin_apt and (not modo or "gaming" in modo) and ej.existe("apt-cache"):
+        for opcional in ("gpu-screen-recorder", "gpu-screen-recorder-cli"):
+            disponible = ej.leer(["apt-cache", "show", opcional])
+            if disponible.ok and f"Package: {opcional}" in disponible.salida.splitlines():
+                paquetes.append(opcional)
+                break
+    faltan_apt = [] if sin_apt else dependencias.apt_faltan(ej, paquetes)
     tabla = t.tabla("Qué", "Cuántos", "Detalle", titulo="Ultron · instalación")
     tabla.add_row("Paquetes apt", str(len(faltan_apt)), ", ".join(faltan_apt[:10]) or "—")
     tabla.add_row("Extensiones GNOME", str(len(plan.extensiones) + 1),

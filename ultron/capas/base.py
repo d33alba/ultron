@@ -30,6 +30,10 @@ class Contexto:
             from ultron.modos.netanyahu.generar_recursos import recurso_generado
 
             return recurso_generado(relativa, ej) or ruta
+        if self.modo.id == "gaming" and not ruta.exists():
+            from ultron.modos.gaming.generar_recursos import recurso_generado
+
+            return recurso_generado(relativa, ej) or ruta
         return ruta
 
 

@@ -17,7 +17,7 @@ from pathlib import Path
 
 from ultron.capas import comun as C
 
-VERSION = 3
+VERSION = 4
 CATEGORIAS = ("apps", "places", "mimetypes", "devices", "status", "actions", "categories",
               "emblems", "legacy")
 BASES = [Path("/usr/share/icons/Yaru"), Path("/usr/share/icons/Adwaita")]
@@ -33,6 +33,7 @@ class Ajustes:
     umbral: float = 0.18          # saturación mínima para considerar un píxel "de color"
     monocromo: bool = False
     opacidad: float = 1.0
+    glow: float = 0.0
     por_categoria: dict[str, str] = field(default_factory=dict)   # categoría -> color
     emblema: str | None = None    # ruta absoluta a PNG
     emblema_en: list[str] = field(default_factory=lambda: ["places"])
@@ -63,7 +64,7 @@ def transformar_rgb(rgb: tuple[int, int, int], aj: Ajustes, objetivo: str) -> tu
 
 def recolorear_imagen(img, aj: Ajustes, objetivo: str):
     """Recolorea una imagen RGBA de Pillow."""
-    from PIL import Image
+    from PIL import Image, ImageFilter
 
     img = img.convert("RGBA")
     alfa = img.getchannel("A")
@@ -89,6 +90,10 @@ def recolorear_imagen(img, aj: Ajustes, objetivo: str):
     if aj.opacidad < 1:
         alfa = alfa.point(lambda x: round(x * aj.opacidad))
     nuevo.putalpha(alfa)
+    if aj.glow > 0:
+        halo = Image.new("RGBA", nuevo.size, objetivo)
+        halo.putalpha(alfa.filter(ImageFilter.GaussianBlur(aj.glow)).point(lambda a: a // 2))
+        return Image.alpha_composite(halo, nuevo)
     return nuevo
 
 
@@ -303,6 +308,7 @@ def generar(
 def ajustes_desde_cfg(cfg: dict, paleta: dict[str, str], emblema: Path | None) -> Ajustes:
     tinte = cfg.get("tinte") or {}
     return Ajustes(
+        glow=float(tinte.get("glow", 0)),
         objetivo=(tinte.get("objetivo") or paleta.get("bandera")
                   or paleta.get("primario", "#3584e4")),
         intensidad=float(tinte.get("intensidad", 0.85)),

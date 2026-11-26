@@ -22,8 +22,10 @@ capas:
     fuente: "JetBrainsMono Nerd Font 12"
     transparencia: 12
     cursor: block
+    cursor_color: "#FF00E6"
   escritorio:
     fondo: tema/fondo.png
+    fondo_bloqueo: tema/bloqueo.png
     esquema: oscuro
     acento: pink
     animaciones: true
@@ -36,25 +38,40 @@ capas:
            background-color: "#0B0B16", dash-max-icon-size: 52}
   iconos:
     tinte:
+      glow: 1.6
       objetivo: "#00F0FF"
       intensidad: 0.9
       saturacion: 1.3
       por_categoria: {places: "#FF00E6", mimetypes: "#8A2BE2", apps: "#00F0FF"}
   cursor: {tema: Bibata-Modern-Ice, generar: true, color: "#00F0FF", tamano: 32}
   extensiones:
+    perfil_neon: true
+    video: tema/fondo.mp4
+    ajustes:
+      /org/gnome/shell/extensions/just-perfection/activities-button: false
+      /org/gnome/shell/extensions/openbar/bartype: "'Floating'"
+      /org/gnome/shell/extensions/openbar/dark-bgcolor: "['0.043', '0.043', '0.086']"
+      /org/gnome/shell/extensions/openbar/dark-bcolor: "['1.0', '0.0', '0.90']"
+      /org/gnome/shell/extensions/openbar/bwidth: 2.0
+      /org/gnome/shell/extensions/openbar/neon: true
     activar: [user-theme@gnome-shell-extensions.gcampax.github.com,
               burn-my-windows@schneegans.github.com, compiz-windows-effect@hermes83.github.com,
               desktop-cube@schneegans.github.com, blur-my-shell@aunetx,
-              rounded-window-corners@fxgn, just-perfection-desktop@just-perfection]
-  sistema: {perfil_energia: performance}
+              rounded-window-corners@fxgn, just-perfection-desktop@just-perfection,
+              openbar@neuromorph, space-bar@luchrioh]
+  sistema: {perfil_energia: performance, atajo_clip: true}
   sonido: {eventos: true}
   widgets: {fuente: "Orbitron"}
+  arranque: {partes: [plymouth, grub, gdm]}
 dependencias:
-  apt: [cava, mangohud, gamemode, chafa, ffmpeg, wf-recorder, lm-sensors]
+  apt: [cava, mangohud, gamemode, chafa, ffmpeg, wf-recorder, lm-sensors, conky-all,
+        gir1.2-gstreamer-1.0, gstreamer1.0-pipewire, gstreamer1.0-plugins-ugly,
+        gstreamer1.0-plugins-bad, gstreamer1.0-plugins-good, xdg-desktop-portal-gnome]
   extensiones: [burn-my-windows@schneegans.github.com, compiz-windows-effect@hermes83.github.com,
                 desktop-cube@schneegans.github.com, blur-my-shell@aunetx,
                 rounded-window-corners@fxgn, just-perfection-desktop@just-perfection,
-                hanabi-extension@jeffshee.github.io, space-bar@luchrioh]
+                hanabi-extension@jeffshee.github.io, space-bar@luchrioh,
+                openbar@neuromorph, just-perfection-desktop@just-perfection]
   fuentes: [Orbitron, Rajdhani-Bold, Rajdhani-Medium, JetBrainsMonoNerd]
 funciones: [juegos, turbo, hud, fps, clip, visualizador, perfil]
 recursos_opcionales:

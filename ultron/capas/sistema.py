@@ -8,6 +8,7 @@ from pathlib import Path
 from ultron.capas import comun as C
 from ultron.capas.base import Capa, registrar_capa
 from ultron.nucleo import estado, hosts, rutas
+from ultron.nucleo.ejecutor import Ejecutor
 from ultron.ui.tema import cargar_tema
 
 NOTIF = "org.gnome.desktop.notifications"
@@ -18,6 +19,22 @@ COLOR = "org.gnome.settings-daemon.plugins.color"
 PRIVACIDAD = "org.gnome.desktop.privacy"
 BUSQUEDA = "org.gnome.desktop.search-providers"
 UBICACION = "org.gnome.system.location"
+ATAJOS = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings"
+ATAJO = ATAJOS + "/ultron-clip/"
+CLAVES_ATAJO = [ATAJOS, *(ATAJO + k for k in ("name", "command", "binding"))]
+
+
+def _atajo(ej: Ejecutor) -> None:
+    import shlex
+
+    lista = C.leer_lista(C.dconf_leer(ej, ATAJOS))
+    if ATAJO not in lista:
+        lista.append(ATAJO)
+    comando = shlex.join([sys.executable, "-m", "ultron", "clip", "guardar"])
+    for clave, valor in {"name": "Guardar clip de Ultron", "command": comando,
+                         "binding": "<Super><Alt>r"}.items():
+        C.dconf_escribir(ej, ATAJO + clave, C.gv_str(valor))
+    C.dconf_escribir(ej, ATAJOS, C.gv_lista(lista))
 CLAVES = [
     (NOTIF, "show-banners"), (SESION, "idle-delay"), (PANTALLA, "lock-enabled"),
     (INTERFAZ, "text-scaling-factor"), (COLOR, "night-light-enabled"),
@@ -40,7 +57,9 @@ class CapaSistema(Capa):
             r = self.ej.leer(["powerprofilesctl", "get"])
             perfil = r.salida.strip() or None
         return {"claves": C.capturar_claves(self.ej, CLAVES), "perfil": perfil,
-                "hosts": bool(cfg.get("bloquear"))}
+                "hosts": bool(cfg.get("bloquear")),
+                "atajo": {k: C.dconf_leer(self.ej, k) for k in CLAVES_ATAJO}
+                if cfg.get("atajo_clip") and self.ej.existe("dconf") else {}}
 
     def aplicar(self, cfg: dict) -> None:
         previo = C.capturar_claves(self.ej, CLAVES)
@@ -65,6 +84,8 @@ class CapaSistema(Capa):
             fijar(PRIVACIDAD, "send-software-usage-stats", "false")
             fijar(BUSQUEDA, "disable-external", "true")
             fijar(UBICACION, "enabled", "false")
+        if cfg.get("atajo_clip") and self.ej.existe("dconf"):
+            _atajo(self.ej)
         if cfg.get("bloquear"):
             hosts.bloquear(self.ej, list(cfg["bloquear"]), etiqueta=f"modo-{self.ctx.modo.id}")
         if cfg.get("perfil_energia") and self.ej.existe("powerprofilesctl"):
@@ -72,6 +93,8 @@ class CapaSistema(Capa):
 
     def restaurar(self, previo: dict) -> None:
         C.restaurar_claves(self.ej, previo.get("claves", {}))
+        for clave, valor in previo.get("atajo", {}).items():
+            C.dconf_restaurar(self.ej, clave, valor)
         if previo.get("hosts"):
             hosts.desbloquear(self.ej, etiqueta=f"modo-{self.ctx.modo.id}")
         if previo.get("perfil") and self.ej.existe("powerprofilesctl"):
@@ -157,6 +180,23 @@ class CapaWidgets(Capa):
             comando = shlex.join([sys.executable, "-m", "ultron.modos.netanyahu.radar_status"])
             valores["radar_publica"] = f"{comando} publica"
             valores["radar_local"] = f"{comando} local"
+        if self.ctx.modo.id == "gaming":
+            import shlex
+
+            comando = shlex.join([sys.executable, "-m", "ultron.modos.gaming.widget"])
+            valores["hud"] = comando
+            if self.ej.existe("conky") and "cairo" in self.ej.leer(["conky", "-v"]).salida.lower():
+                lua = self.ctx.recurso("tema/anillos.lua")
+                if lua.is_file():
+                    destino_lua = self._rutas()[0].with_suffix(".lua")
+                    self.ej.escribir(destino_lua, renderizar_conky(
+                        lua.read_text(encoding="utf-8"), valores))
+                    plantilla = plantilla.replace("conky.config = {", (
+                        f"conky.config = {{\n  lua_load = {str(destino_lua)!r}, "
+                        "lua_draw_hook_pre = 'anillos',"
+                    ))
+                    plantilla = plantilla.replace("@@anillos@@", "\n\n\n\n")
+            plantilla = plantilla.replace("@@anillos@@", "")
         conf, auto = self._rutas()
         self.ej.escribir(conf, renderizar_conky(plantilla, valores))
         res = self.ej.run(["conky", "-c", str(conf)], check=False, fondo=True)

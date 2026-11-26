@@ -208,7 +208,7 @@ class CapaArranque(Capa):
             logo = self._imagen({}, "logo", "logo")
         self.ej.copiar(logo, d / "logo.png", sudo=True)
         self.ej.copiar(self._barra(p), d / "barra.png", sudo=True)
-        fotogramas = 12 if self.ctx.modo.id == "netanyahu" else 0
+        fotogramas = 12 if self.ctx.modo.id in {"netanyahu", "gaming"} else 0
         for i in range(1, fotogramas + 1):
             nombre = f"estrella-{i:02}.png"
             origen = self.ctx.respaldo(f"tema/arranque/{nombre}", self.ej)

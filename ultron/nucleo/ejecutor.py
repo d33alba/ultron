@@ -73,6 +73,7 @@ class Ejecutor:
         fondo: bool = False,
         directorio: Path | None = None,
         registro: Path | None = None,
+        interactivo: bool = False,
     ) -> Resultado:
         cmd = [str(c) for c in cmd]
         if sudo:
@@ -80,7 +81,7 @@ class Ejecutor:
         self._registrar(cmd)
         if self.simular:
             return Resultado(0, "", "")
-        opciones = {}
+        opciones = {"interactivo": True} if interactivo else {}
         if directorio is not None:
             opciones["directorio"] = directorio
         if registro is not None:
@@ -107,6 +108,7 @@ class Ejecutor:
         fondo: bool = False,
         directorio: Path | None = None,
         registro: Path | None = None,
+        interactivo: bool = False,
     ) -> Resultado:
         try:
             if fondo:
@@ -122,7 +124,7 @@ class Ejecutor:
                     )
                 return Resultado(0, str(proc.pid), "")
             p = subprocess.run(
-                cmd, input=entrada, capture_output=True, text=True, timeout=timeout,
+                cmd, input=entrada, capture_output=not interactivo, text=True, timeout=timeout,
                 cwd=directorio,
             )
         except FileNotFoundError as e:

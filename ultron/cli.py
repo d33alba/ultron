@@ -9,16 +9,36 @@ from typing import Any
 
 import typer
 from rich.text import Text
+from typer.core import TyperGroup
 
 from ultron import __version__
-from ultron.nucleo import estado, motor, registro
+from ultron.nucleo import estado, motor, registro, xp
 from ultron.nucleo.doctor import OpcionesDoctor
 from ultron.nucleo.doctor import ejecutar as ejecutar_doctor
 from ultron.nucleo.ejecutor import Ejecutor, ErrorEjecucion
 from ultron.nucleo.esquema import ErrorEsquema
 from ultron.ui import animaciones, banner, tema
 
+
+class GrupoUltron(TyperGroup):
+    def parse_args(self, ctx, args):
+        antes_del_separador = args[:args.index("--")] if "--" in args else args
+        ctx.meta["ultron_simulado"] = "--simular" in antes_del_separador
+        return super().parse_args(ctx, args)
+
+    def invoke(self, ctx):
+        previo = estado.modo_activo()
+        resultado = super().invoke(ctx)
+        if ctx.invoked_subcommand and not ctx.meta["ultron_simulado"]:
+            try:
+                xp.registrar(ctx.invoked_subcommand, modo_previo=previo)
+            except (OSError, ErrorEjecucion):
+                tema.actual().aviso("No se pudo guardar o anunciar la experiencia.")
+        return resultado
+
+
 app = typer.Typer(
+    cls=GrupoUltron,
     name="ultron",
     help="Transforma Ubuntu entero según el modo: estética, terminal, sonidos, IA y funciones.",
     no_args_is_help=False,
