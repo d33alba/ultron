@@ -10,7 +10,9 @@ PY=".venv/Scripts/python"; [ -x "$PY" ] || PY=".venv/bin/python"
 INICIO="${1:-01}"
 REINTENTOS=2
 
-limite_agotado() { grep -qiE "usage limit|rate limit|quota|exceeded your|try again (in|at)" "$1"; }
+# Solo la línea de error del propio Codex: el registro también contiene el código del
+# proyecto, que menciona "quota" o "rate limit" y daba falsos positivos.
+limite_agotado() { grep -qiE "^ERROR: .*(usage limit|rate limit|quota)" "$1"; }
 
 ejecutar_codex() {  # $1 = prompt, $2 = log
   codex exec --approve-for-me --skip-git-repo-check -C "$RAIZ" \
