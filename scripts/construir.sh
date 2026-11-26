@@ -13,8 +13,15 @@ REINTENTOS=2
 limite_agotado() { grep -qiE "usage limit|rate limit|quota|exceeded your|try again (in|at)" "$1"; }
 
 ejecutar_codex() {  # $1 = prompt, $2 = log
-  codex exec -s workspace-write --approve-for-me --skip-git-repo-check -C "$RAIZ" \
+  codex exec --approve-for-me --skip-git-repo-check -C "$RAIZ" \
     --color never -o "${2%.log}.final.md" - <<<"$1" >"$2" 2>&1
+  local codigo=$?
+  if limite_agotado "$2"; then
+    echo "LIMITE_GPT log=$2" | tee logs/ESTADO; exit 3
+  fi
+  if [ $codigo -ne 0 ]; then
+    echo "ERROR_CODEX codigo=$codigo log=$2" | tee logs/ESTADO; tail -n 20 "$2"; exit 4
+  fi
 }
 
 pasar_tests() {  # $1 = archivo de salida
