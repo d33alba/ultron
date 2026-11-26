@@ -97,6 +97,10 @@ def cmd_instalar(
     _instalar_propia(t, ej)
     _instalar_fuentes(t, ej, plan.fuentes)
     _generar_recursos(t, modo or None, simular)
+    from ultron.nucleo import atajo
+
+    if atajo.instalar(ej):
+        t.ok("Atajo Super+U para abrir Ultron")
     if not simular and (not modo or "netanyahu" in modo):
         from ultron.modos.netanyahu.funciones.ojo import version_valida
 
@@ -204,6 +208,9 @@ def cmd_desinstalar(
         raise typer.Exit()
     if motor.leer_instantanea():
         motor.salir(ej=ej)
+    from ultron.nucleo import atajo
+
+    atajo.quitar(ej)
     instaladas = jsonio.leer(ruta_instaladas(), {}) or {}
     for uuid in instaladas.get("extensiones", []):
         ej.run(["gnome-extensions", "uninstall", uuid], check=False)

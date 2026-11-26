@@ -73,6 +73,7 @@ def generar_script(cfg: dict, tema: Tema, nombre_modo: str, python: str | None =
         lineas.append(f"export {nombre}={shlex.quote(str(valor))}")
     for nombre, valor in (cfg.get("alias") or {}).items():
         lineas.append(f"alias {nombre}={shlex.quote(str(valor))}")
+    lineas.append("alias uerr='ultron error'")
     if cfg.get("historial") is False:
         lineas += ["export HISTFILE=/dev/null", "unset HISTFILE"]
     lineas += [
