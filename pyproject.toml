@@ -57,6 +57,9 @@ ignore = ["B008"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["E501"]
+# plantillas HTML/CSS dentro de cadenas
+"ultron/modos/presentacion/diapos.py" = ["E501"]
+"ultron/modos/presentacion/funciones/__init__.py" = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
