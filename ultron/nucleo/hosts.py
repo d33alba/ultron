@@ -44,7 +44,7 @@ def bloquear(ej: Ejecutor, dominios: list[str], etiqueta: str = "bloqueo",
     actual = ruta.read_text(encoding="utf-8") if ruta.exists() else ""
     nuevo = poner(actual, dominios, etiqueta)
     if nuevo != actual:
-        ej.escribir(ruta, nuevo, sudo=ruta == HOSTS)
+        ej.escribir(ruta, nuevo, sudo=necesita_sudo(ruta))
 
 
 def desbloquear(ej: Ejecutor, etiqueta: str = "bloqueo", ruta: Path | None = None) -> None:
@@ -54,7 +54,7 @@ def desbloquear(ej: Ejecutor, etiqueta: str = "bloqueo", ruta: Path | None = Non
     actual = ruta.read_text(encoding="utf-8")
     nuevo = quitar(actual, etiqueta)
     if nuevo != actual:
-        ej.escribir(ruta, nuevo, sudo=ruta == HOSTS)
+        ej.escribir(ruta, nuevo, sudo=necesita_sudo(ruta))
 
 
 def activo(etiqueta: str = "bloqueo", ruta: Path | None = None) -> bool:
@@ -63,3 +63,10 @@ def activo(etiqueta: str = "bloqueo", ruta: Path | None = None) -> bool:
         return _marcas(etiqueta)[0] in ruta.read_text(encoding="utf-8")
     except OSError:
         return False
+
+
+def necesita_sudo(ruta: Path) -> bool:
+    """Solo hace falta sudo si no se puede escribir el archivo (como /etc/hosts)."""
+    import os
+
+    return not os.access(ruta if ruta.exists() else ruta.parent, os.W_OK)
