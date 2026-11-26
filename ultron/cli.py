@@ -141,9 +141,22 @@ def cmd_entrar(
     excepto: str = typer.Option(None, "--excepto", help="Todas menos estas capas."),
     sin_sudo: bool = typer.Option(False, "--sin-sudo", help="Salta las capas que piden sudo."),
     si: bool = typer.Option(False, "--si", "-y", help="No preguntes: acepta todo."),
+    arranque: bool = typer.Option(
+        False, "--arranque", help="Cambia también el arranque: Plymouth, GRUB y GDM (sudo)."
+    ),
+    sin_carga: bool = typer.Option(False, "--sin-carga", help="Sin pantalla de carga."),
+    como_ubuntu: bool = typer.Option(
+        False, "--como-ubuntu", help="Al simular, supón que hay GNOME y todas las herramientas."
+    ),
 ) -> None:
     """Transforma el sistema con un modo."""
+    import os
+
+    from ultron.ui import carga
+
     simular = simular or GLOBAL["simular"]
+    if arranque:
+        os.environ["ULTRON_ARRANQUE"] = "1"
     modo = registro.obtener(id_modo)
     viejo_id = estado.modo_activo()
     viejo = tema.cargar_tema(viejo_id) if viejo_id else None
@@ -155,19 +168,42 @@ def cmd_entrar(
     else:
         c.print(f"[bold primario]{nuevo.glifo('marca')} Entrando en {modo.nombre}…[/]")
 
-    def confirmar(capas: list[str]) -> bool:
-        if si:
-            return True
-        return typer.confirm(
-            f"Las capas {', '.join(capas)} necesitan permisos de administrador (sudo). ¿Seguir?",
+    import platform
+
+    ej = Ejecutor(simular=simular, consola=c,
+                  suponer=como_ubuntu or platform.system() != "Linux")
+    clases, _ = motor.capas_del_modo(modo, _lista(solo), _lista(excepto))
+    from ultron.capas.base import Contexto
+
+    ctx = Contexto(modo=modo, dir_modo=modo.dir, consola=c)
+    con_sudo = [cl.nombre for cl in clases if cl.requiere_sudo and cl(ej, ctx).disponible()[0]]
+    if "bloquear" in (modo.capas.get("sistema") or {}):
+        con_sudo.append("sistema (bloqueo de webs)")
+    acepta_sudo = not sin_sudo
+    if con_sudo and not simular and not sin_sudo:
+        # se pregunta ANTES de la pantalla de carga, que tapa la terminal
+        acepta_sudo = si or typer.confirm(
+            f"{', '.join(con_sudo)} necesita permisos de administrador (sudo). ¿Seguir?",
             default=True,
         )
+        if acepta_sudo and ej.existe("sudo"):
+            ej.run(["sudo", "-v"], check=False, timeout=None)
 
-    ej = Ejecutor(simular=simular, consola=c)
-    motor.entrar(
-        modo.id, ej=ej, solo=_lista(solo), excepto=_lista(excepto), sin_sudo=sin_sudo,
-        confirmar_sudo=confirmar, progreso=_imprimir_progreso(nuevo), consola=c,
-    )
+    nombres = [cl.nombre for cl in clases]
+
+    def trabajo(progreso):
+        return motor.entrar(
+            modo.id, ej=ej, solo=_lista(solo), excepto=_lista(excepto),
+            sin_sudo=not acepta_sudo, confirmar_sudo=lambda _capas: acepta_sudo,
+            progreso=progreso, consola=c,
+        )
+
+    if simular:
+        motor.entrar(modo.id, ej=ej, solo=_lista(solo), excepto=_lista(excepto),
+                     progreso=_imprimir_progreso(nuevo), consola=c)
+    else:
+        carga.ejecutar(nuevo, f"{nuevo.glifo('marca')} {modo.nombre}", nombres, trabajo,
+                       usar_gtk=not sin_carga)
     if simular:
         c.print(f"[apagado]{len(ej.historial)} operaciones simuladas.[/]")
         return

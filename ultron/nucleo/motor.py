@@ -100,10 +100,14 @@ def _restaurar_lista(
 
 
 def _panel_modo(modo: ModoDef | None) -> None:
+    import shutil
+
     modos = [{"id": m.id, "nombre": m.nombre} for m in registro.listar()]
+    comando = shutil.which("ultron") or "ultron"
     if modo is None:
         panel.escribir(
-            modo=None, nombre=None, glifo=None, acento=None, musica_sonando=False, modos=modos
+            modo=None, nombre=None, glifo=None, acento=None, musica_sonando=False, modos=modos,
+            comando=comando,
         )
         return
     from ultron.ui.tema import cargar_tema
@@ -116,6 +120,7 @@ def _panel_modo(modo: ModoDef | None) -> None:
         acento=tema.paleta.get("primario", "#00F0FF"),
         musica_silenciada=False,
         modos=modos,
+        comando=comando,
     )
 
 

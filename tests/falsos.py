@@ -33,6 +33,7 @@ class EjecutorFalso(Ejecutor):
         self.fallar = {self._clave(k): v for k, v in (fallar or {}).items()}
         self.gsettings: dict[tuple[str, str], str] = dict(gsettings or {})
         self.defectos: dict[tuple[str, str], str] = dict(self.gsettings)
+        self.dconf: dict[str, str] = {}
 
     @staticmethod
     def _clave(k: Any) -> tuple[str, ...]:
@@ -62,6 +63,21 @@ class EjecutorFalso(Ejecutor):
                 return Resultado(0, "", "")
         if cmd[:2] == ["gsettings", "list-keys"]:
             return Resultado(0, "", "")
+        if cmd[:1] == ["dconf"] and len(cmd) >= 3:
+            accion = cmd[1]
+            if accion == "read":
+                valor = self.dconf.get(cmd[2])
+                return Resultado(0, f"{valor}\n" if valor is not None else "", "")
+            if accion == "write" and len(cmd) >= 4:
+                self.dconf[cmd[2]] = cmd[3]
+                return Resultado(0, "", "")
+            if accion == "reset":
+                if cmd[2] == "-f" and len(cmd) >= 4:
+                    for k in [k for k in self.dconf if k.startswith(cmd[3])]:
+                        del self.dconf[k]
+                else:
+                    self.dconf.pop(cmd[2], None)
+                return Resultado(0, "", "")
         valor = self._buscar(self.respuestas, cmd)
         if callable(valor):
             valor = valor(cmd)

@@ -15,6 +15,47 @@ capas:
       gg: "ultron juegos"
       hud: "ultron hud"
     bienvenida: true
+  fuentes: {}
+  terminal:
+    fondo: "#0B0B16"
+    texto: "#E6E6FF"
+    fuente: "JetBrainsMono Nerd Font 12"
+    transparencia: 12
+    cursor: block
+  escritorio:
+    fondo: tema/fondo.png
+    esquema: oscuro
+    acento: pink
+    animaciones: true
+    fuente_ui: "Rajdhani Medium 12"
+    tema_gtk: generar
+    tema_shell: generar
+    brillo: true
+    dock: {dock-position: BOTTOM, extend-height: false, transparency-mode: FIXED,
+           background-opacity: 0.6, custom-background-color: true,
+           background-color: "#0B0B16", dash-max-icon-size: 52}
+  iconos:
+    tinte:
+      objetivo: "#00F0FF"
+      intensidad: 0.9
+      saturacion: 1.3
+      por_categoria: {places: "#FF00E6", mimetypes: "#8A2BE2", apps: "#00F0FF"}
+  cursor: {tema: Bibata-Modern-Ice, generar: true, color: "#00F0FF", tamano: 32}
+  extensiones:
+    activar: [user-theme@gnome-shell-extensions.gcampax.github.com,
+              burn-my-windows@schneegans.github.com, compiz-windows-effect@hermes83.github.com,
+              desktop-cube@schneegans.github.com, blur-my-shell@aunetx,
+              rounded-window-corners@fxgn, just-perfection-desktop@just-perfection]
+  sistema: {perfil_energia: performance}
+  sonido: {eventos: true}
+  widgets: {fuente: "Orbitron"}
+dependencias:
+  apt: [cava, mangohud, gamemode, chafa, ffmpeg, wf-recorder, lm-sensors]
+  extensiones: [burn-my-windows@schneegans.github.com, compiz-windows-effect@hermes83.github.com,
+                desktop-cube@schneegans.github.com, blur-my-shell@aunetx,
+                rounded-window-corners@fxgn, just-perfection-desktop@just-perfection,
+                hanabi-extension@jeffshee.github.io, space-bar@luchrioh]
+  fuentes: [Orbitron, Rajdhani-Bold, Rajdhani-Medium, JetBrainsMonoNerd]
 funciones: [juegos, turbo, hud, fps, clip, visualizador, perfil]
 recursos_opcionales:
   - {ruta: tema/fondo.mp4, descripcion: "Vídeo cyberpunk en bucle (Pexels o Pixabay)"}

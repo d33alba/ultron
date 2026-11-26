@@ -15,5 +15,37 @@ capas:
       estudiar: "ultron pomodoro"
       repaso: "ultron repasar"
     bienvenida: true
+  fuentes: {}
+  terminal:
+    fondo: "#1E1F22"
+    texto: "#C8C8C8"
+    fuente: "JetBrains Mono 12"
+    transparencia: 0
+    cursor: ibeam
+  escritorio:
+    fondo: tema/fondo.png
+    esquema: oscuro
+    acento: slate
+    animaciones: false
+    tema_gtk: generar
+    tema_shell: generar
+    dock: {autohide: true, intellihide: true, dash-max-icon-size: 36}
+  iconos:
+    monocromo: true
+    tinte: {objetivo: "#8FBC8F"}
+  cursor: {tamano: 24}
+  extensiones:
+    activar: [user-theme@gnome-shell-extensions.gcampax.github.com]
+    desactivar: [burn-my-windows@schneegans.github.com,
+                 compiz-windows-effect@hermes83.github.com, desktop-cube@schneegans.github.com]
+  sistema:
+    notificaciones: false
+    luz_nocturna: true
+    escala_texto: 1.05
+  sonido: {eventos: false}
+  widgets: {fuente: "Inter"}
+dependencias:
+  apt: [poppler-utils, pandoc, tesseract-ocr, tesseract-ocr-spa]
+  fuentes: [Inter]
 funciones: [resumen, flashcards, repasar, examen, pregunta, esquema, explica, plan, pomodoro,
             stats, ordenar]

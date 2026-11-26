@@ -38,17 +38,21 @@ def _texto(cmd: list[str]) -> str:
 
 
 class Ejecutor:
-    def __init__(self, simular: bool = False, consola: Any = None):
+    def __init__(self, simular: bool = False, consola: Any = None, suponer: bool = False):
         self.simular = simular
         self.consola = consola
+        # suponer=True (solo al simular): se actúa como si todos los programas existieran,
+        # para ver en Windows o en CI todo lo que haría Ultron en un Ubuntu con GNOME.
+        self.suponer = suponer and simular
         self.historial: list[list[str]] = []
 
     # --- registro -------------------------------------------------------------
     def _registrar(self, cmd: list[str]) -> None:
         self.historial.append(list(cmd))
         if self.simular and self.consola is not None:
+            legible = " ".join(f'"{c}"' if " " in c else c for c in map(str, cmd))
             self.consola.print(
-                f"[apagado]  simular ▸[/] {_texto(cmd)}", markup=True, highlight=False
+                f"[apagado]  simular ▸[/] {legible}", markup=False, highlight=False
             )
 
     @staticmethod
@@ -78,6 +82,8 @@ class Ejecutor:
 
     def leer(self, cmd: list[str], *, timeout: float | None = 15) -> Resultado:
         """Ejecuta un comando de solo lectura, también al simular. Nunca lanza."""
+        if self.suponer and shutil.which(str(cmd[0])) is None:
+            return Resultado(0, "", "")
         try:
             return self._ejecutar([str(c) for c in cmd], check=False, timeout=timeout)
         except ErrorEjecucion as e:
@@ -116,10 +122,12 @@ class Ejecutor:
         return res
 
     def existe(self, programa: str) -> bool:
-        return shutil.which(programa) is not None
+        return self.suponer or shutil.which(programa) is not None
 
     # --- gsettings ------------------------------------------------------------
     def gsettings_get(self, esquema: str, clave: str) -> str | None:
+        if self.suponer and shutil.which("gsettings") is None:
+            return "''"
         if not self.existe("gsettings"):
             return None
         r = self.leer(["gsettings", "get", esquema, clave])

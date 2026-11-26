@@ -13,4 +13,28 @@ capas:
   shell:
     historial: false
     bienvenida: true
+  terminal:
+    fondo: "#000000"
+    texto: "#E8E8E8"
+    fuente: "JetBrains Mono 12"
+    transparencia: 15
+    cursor: underline
+  escritorio:
+    fondo: tema/fondo.png
+    esquema: oscuro
+    acento: slate
+    tema_gtk: generar
+    tema_shell: generar
+    dock: {autohide: true}
+  iconos:
+    monocromo: true
+    opacidad: 0.6
+    tinte: {objetivo: "#E8E8E8"}
+  cursor: {generar: true, color: "#E8E8E8", tamano: 24}
+  sistema:
+    privacidad: true
+    notificaciones: false
+  sonido: {eventos: false}
+dependencias:
+  apt: [tor, torsocks, mat2, age, gocryptfs, secure-delete]
 funciones: [mac, dns-seguro, tor, rastros, limpiar-meta, cofre, efimero, nota-efimera]

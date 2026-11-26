@@ -11,4 +11,26 @@ ia:
 capas:
   shell:
     bienvenida: true
+  terminal:
+    fondo: "#2B2B2E"
+    texto: "#FFFFFF"
+    fuente: "JetBrains Mono 16"
+    transparencia: 0
+  escritorio:
+    fondo: tema/fondo.png
+    esquema: oscuro
+    acento: yellow
+    tema_gtk: generar
+    tema_shell: generar
+    dock: {autohide: true, intellihide: true}
+  cursor: {tamano: 48}
+  extensiones:
+    desactivar: [ding@rastersoft.com, burn-my-windows@schneegans.github.com]
+  sistema:
+    notificaciones: false
+    suspension_min: 0
+    bloqueo_pantalla: false
+    luz_nocturna: false
+    escala_texto: 1.15
+  sonido: {eventos: false}
 funciones: [diapos, ensayo, cronometro, teleprompter]

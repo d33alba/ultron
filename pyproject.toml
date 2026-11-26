@@ -44,6 +44,9 @@ path = "ultron/__init__.py"
 [tool.hatch.build.targets.wheel]
 packages = ["ultron"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"extension" = "ultron/_extension"
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
@@ -51,6 +54,9 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP"]
 ignore = ["B008"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -10,3 +10,6 @@ build/
 *.egg-info/
 logs/
 .codex/
+
+# Música de los modos (con derechos de autor): se añade con ultron musica importar
+ultron/modos/*/tema/musica.mp3

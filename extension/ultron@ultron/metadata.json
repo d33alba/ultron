@@ -1,0 +1,8 @@
+{
+  "uuid": "ultron@ultron",
+  "name": "Ultron",
+  "description": "Indicador de Ultron: modo activo, bocina para silenciar la música, pomodoro, XP y cambio rápido de modo.",
+  "shell-version": ["45", "46", "47", "48"],
+  "url": "https://github.com/d33alba/ultron",
+  "version": 1
+}
