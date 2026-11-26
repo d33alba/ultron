@@ -25,6 +25,7 @@ def tmp_home(tmp_path, monkeypatch):
     monkeypatch.setenv("XDG_DATA_HOME", str(home / ".local" / "share"))
     monkeypatch.setenv("XDG_CACHE_HOME", str(home / ".cache"))
     monkeypatch.setenv("ULTRON_SIN_ANIMACIONES", "1")
+    monkeypatch.setenv("ULTRON_SIN_AUTODETECCION", "1")
     for var in ("ULTRON_PROVEEDOR", "ULTRON_URL_BASE", "ULTRON_MODELO", "ULTRON_API_KEY"):
         monkeypatch.delenv(var, raising=False)
     registro.invalidar()

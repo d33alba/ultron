@@ -1,0 +1,11 @@
+# Copia este archivo en ~/.config/ultron/config.toml (o usa: ultron ia configurar).
+# También vale con variables de entorno: ULTRON_URL_BASE, ULTRON_MODELO, ULTRON_API_KEY.
+
+[ia]
+# local (OpenAI-compatible) · ollama · lmstudio · openai · groq · openrouter · gemini · anthropic
+proveedor = "local"
+# Ollama: http://localhost:11434/v1 · LM Studio: http://localhost:1234/v1 · vLLM: http://host:8000/v1
+url_base = "http://localhost:11434/v1"
+modelo = "llama3.2"
+# clave = "sk-..."   # opcional en servidores locales
+timeout = 120        # segundos; los modelos locales pueden tardar
