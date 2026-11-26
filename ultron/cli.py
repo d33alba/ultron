@@ -12,7 +12,7 @@ from rich.text import Text
 from typer.core import TyperGroup
 
 from ultron import __version__
-from ultron.nucleo import estado, motor, registro, xp
+from ultron.nucleo import entrega, estado, motor, registro, xp
 from ultron.nucleo.doctor import OpcionesDoctor
 from ultron.nucleo.doctor import ejecutar as ejecutar_doctor
 from ultron.nucleo.ejecutor import Ejecutor, ErrorEjecucion
@@ -84,11 +84,18 @@ def raiz(
 # --- modos -------------------------------------------------------------------
 
 
-@app.command("modos")
+grupo_modos = typer.Typer(help="Lista, consulta y crea modos.")
+app.add_typer(grupo_modos, name="modos")
+
+
+@grupo_modos.callback(invoke_without_command=True)
 def cmd_modos(
+    ctx: typer.Context,
     detalle: str = typer.Option(None, "--detalle", "-d", help="Enseña un modo en detalle."),
 ) -> None:
     """Lista los modos disponibles, cada uno con su propio estilo."""
+    if ctx.invoked_subcommand is not None:
+        return
     t = tema.actual()
     c = t.consola
     if detalle:
@@ -113,6 +120,28 @@ def cmd_modos(
     c.print(tabla)
     c.print("[apagado]Entra en uno con:[/] [acento]ultron entrar <modo>[/]  "
             "[apagado]· detalle:[/] [acento]ultron modos -d <modo>[/]")
+
+
+@grupo_modos.command("nuevo")
+def cmd_modo_nuevo(id_modo: str) -> None:
+    """Genera la plantilla de un modo personal."""
+    entrega.crear_modo(id_modo, simular=GLOBAL["simular"])
+
+
+@app.command("demo")
+def cmd_demo(
+    ctx: typer.Context,
+    rapida: bool = typer.Option(False, "--rapida", help="Un ejemplo por modo, sin pausas."),
+) -> None:
+    """Recorre los cinco modos con ejemplos que funcionan sin red ni IA."""
+    raiz = ctx.find_root()
+
+    def ejecutar(args: tuple[str, ...]) -> None:
+        comando = raiz.command.get_command(raiz, args[0])
+        with comando.make_context(args[0], list(args[1:]), parent=raiz) as contexto:
+            comando.invoke(contexto)
+
+    entrega.recorrer(ejecutar, rapida=rapida, simular=GLOBAL["simular"])
 
 
 def _detalle_modo(id_modo: str) -> None:
@@ -299,6 +328,19 @@ def cmd_doctor(
         glifo, estilo = estilos.get(r.estado, ("info", "texto"))
         tabla.add_row(f"[{estilo}]{t.glifo(glifo)}[/]", r.nombre, r.detalle, r.solucion)
     t.consola.print(tabla)
+    if completo:
+        pendientes = [r for r in resultados if r.estado != "ok"]
+        if pendientes:
+            t.aviso("Pendiente para la corrección")
+            for r in pendientes:
+                t.consola.print(Text(f"• {r.nombre} · {r.detalle} · {r.solucion}"))
+        else:
+            t.ok("Listo para corregir ✔")
+        if any(r.estado == "error" for r in pendientes):
+            raise typer.Exit(1)
+        if pendientes:
+            raise typer.Exit(2)
+        return
     errores = sum(r.estado == "error" for r in resultados)
     avisos = sum(r.estado == "aviso" for r in resultados)
     if errores:

@@ -11,13 +11,16 @@ from ultron.nucleo.ejecutor import Ejecutor
 
 @comprobacion("IA", grupo="ia")
 def _ia(_ej: Ejecutor, op: OpcionesDoctor) -> list[Chequeo]:
-    aj = resolver()
+    aj = resolver(autodetectar=not op.sin_ia)
     if aj is None:
         return [Chequeo("IA configurada", "aviso", "No hay IA configurada",
                         "ultron ia configurar  (todo lo que no es IA funciona igual)")]
     resultados = [Chequeo("IA configurada", "ok",
                           f"{aj.proveedor} · {aj.url_base} · {aj.modelo or 'sin modelo'}")]
     if op.sin_ia:
+        if op.completo:
+            resultados.append(Chequeo("IA responde", "aviso", "Prueba omitida",
+                                      "ultron doctor --completo"))
         return resultados
     cliente = crear(aj)
     try:
@@ -28,7 +31,7 @@ def _ia(_ej: Ejecutor, op: OpcionesDoctor) -> list[Chequeo]:
     if aj.modelo and disponibles and aj.modelo not in disponibles:
         resultados.append(Chequeo(
             "Modelo existe", "error", f"«{aj.modelo}» no está en el servidor",
-            "Disponibles: " + ", ".join(disponibles[:8]),
+            "ultron ia configurar · disponibles: " + ", ".join(disponibles[:8]),
         ))
         return resultados
     if not aj.modelo:

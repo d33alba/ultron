@@ -1,0 +1,83 @@
+name: CI de Ultron
+on: [push, pull_request]
+
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        python: ['3.10', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -e '.[dev]'
+      - run: ruff check ultron tests scripts/capturas.py
+      - run: pytest --cov=ultron
+
+  simular:
+    runs-on: ubuntu-24.04
+    env:
+      ULTRON_SIN_AUTODETECCION: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install .
+      - run: |
+          set -euo pipefail
+          export XDG_STATE_HOME="$RUNNER_TEMP/ultron-estado"
+          ultron modos
+          for modo in netanyahu focus gaming presentacion fantasma; do
+            ultron entrar "$modo" --simular --si
+            ultron salir --simular
+          done
+          estado=0
+          ultron doctor --sin-ia > "$RUNNER_TEMP/doctor.txt" || estado=$?
+          cat "$RUNNER_TEMP/doctor.txt"
+          # El runner carece de una sesión GNOME. Acepta solo los errores esperados.
+          if (( estado != 0 )); then
+            test "$estado" -eq 1
+            grep -Eq '[12] errores' "$RUNNER_TEMP/doctor.txt"
+            grep -q 'GNOME' "$RUNNER_TEMP/doctor.txt"
+            if grep -q 'comprobación falló' "$RUNNER_TEMP/doctor.txt"; then exit 1; fi
+          fi
+
+  extension:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: extension/ultron@ultron
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          jq -e '.uuid == "ultron@ultron" and
+            (.name | type == "string") and
+            (."shell-version" | length > 0)' metadata.json
+          node --input-type=module --check < extension.js
+
+  shellcheck:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: shellcheck install.sh uninstall.sh
+
+  capturas:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install .
+      - run: python scripts/capturas.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: capturas-ultron
+          path: docs/media/
+          if-no-files-found: error

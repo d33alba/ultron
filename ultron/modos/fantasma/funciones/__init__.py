@@ -49,9 +49,14 @@ def _tamano(n: int) -> str:
 def cmd_mac(
     ctx: typer.Context,
     accion: str = typer.Argument("estado", help="aleatoria, restaurar o estado."),
+    demo: bool = typer.Option(False, "--demo", help="Muestra una conexión ficticia."),
 ) -> None:
     """MAC aleatoria en tu conexión (la red no te reconoce). Corta la red unos segundos."""
-    t, ej = _t(), _ej(ctx)
+    t = _t()
+    if demo:
+        t.info("Red de ejemplo (wlan0) · MAC local 02:00:00:00:00:42")
+        return
+    ej = _ej(ctx)
     try:
         if accion == "aleatoria":
             t.aviso("la conexión se cortará unos segundos…")
@@ -74,9 +79,14 @@ def cmd_mac(
 def cmd_dns(
     ctx: typer.Context,
     accion: str = typer.Argument("estado", help="on, off o estado."),
+    demo: bool = typer.Option(False, "--demo", help="Muestra un estado ficticio."),
 ) -> None:
     """DNS cifrado (DNS sobre TLS con Cloudflare y Quad9) en systemd-resolved."""
-    t, ej = _t(), _ej(ctx)
+    t = _t()
+    if demo:
+        t.info("Ejemplo · DNS sobre TLS activo · Proveedor Quad9")
+        return
+    ej = _ej(ctx)
     try:
         if accion == "on":
             P.dns_on(ej)

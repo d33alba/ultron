@@ -144,7 +144,9 @@ def entrar(
     resultados: list[ResultadoCapa] = []
 
     if not simular and leer_instantanea():
-        salir(ej=ej, progreso=progreso, consola=consola)
+        restauradas = salir(ej=ej, progreso=progreso, consola=consola)
+        if any(r.estado == "fallida" for r in restauradas):
+            raise ErrorMotor("Restaura primero las capas pendientes con: ultron salir")
 
     clases, desconocidas = capas_del_modo(modo, solo, excepto)
     for nombre in desconocidas:
@@ -185,13 +187,15 @@ def entrar(
             capa.aplicar(cfg)
         except Exception as e:  # noqa: BLE001 - cualquier fallo provoca rollback
             progreso(nombre, "fallida")
+            mensaje = ""
             if not simular:
-                _restaurar_lista(inst["capas"], ej, ctx, progreso)
-                ruta_instantanea().unlink(missing_ok=True)
-                estado.actualizar(modo_activo=None, capas=None)
-            raise ErrorMotor(
-                f"La capa «{nombre}» ha fallado: {e}. Se ha restaurado todo lo aplicado."
-            ) from e
+                restauradas = salir(ej=ej, progreso=progreso, consola=consola)
+                mensaje = (
+                    " Restaura las capas pendientes con: ultron salir"
+                    if any(r.estado == "fallida" for r in restauradas)
+                    else " Se ha restaurado todo lo aplicado."
+                )
+            raise ErrorMotor(f"La capa «{nombre}» ha fallado: {e}.{mensaje}") from e
         resultados.append(ResultadoCapa(nombre, "aplicada"))
         progreso(nombre, "aplicada")
 
@@ -228,6 +232,11 @@ def salir(
         ctx = None
     resultados = _restaurar_lista(inst.get("capas", []), ej, ctx, progreso)
     if not ej.simular:
+        pendientes = {r.nombre for r in resultados if r.estado == "fallida"}
+        if pendientes:
+            inst["capas"] = [c for c in inst.get("capas", []) if c.get("nombre") in pendientes]
+            _guardar_instantanea(inst)
+            return resultados
         ruta_instantanea().unlink(missing_ok=True)
         estado.actualizar(modo_activo=None, desde=None, capas=None)
         _panel_modo(None)

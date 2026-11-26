@@ -154,9 +154,13 @@ def cmd_diapos(
     archivo: Path = typer.Argument(None, help="Presentación en Markdown (separa con ---)."),
     notas: bool = typer.Option(False, "--notas", help="Abre la vista del orador (otra ventana)."),
     exportar: str = typer.Option(None, "--exportar", help="html: exporta la presentación."),
+    demo: bool = typer.Option(False, "--demo", help="Muestra una diapositiva de ejemplo."),
 ) -> None:
     """Presentación a pantalla completa en la terminal, con notas del orador después de ???."""
     t = _t()
+    if demo:
+        t.consola.print(t.panel("Objetivo · Diseño · Resultados", titulo="Una charla con Ultron"))
+        return
     if notas:
         app_notas(t).run()
         return
@@ -238,9 +242,13 @@ def vista_cronometro(restante: float, total: float, paleta: dict[str, str]) -> G
 @app.command("cronometro")
 def cmd_cronometro(
     minutos: float = typer.Option(10, "--min", help="Minutos de la charla."),
+    demo: bool = typer.Option(False, "--demo", help="Muestra una cuenta atrás de ejemplo."),
 ) -> None:
     """Cuenta atrás gigante: verde, ámbar a los 2 minutos y rojo a los 30 segundos."""
     t = _t()
+    if demo:
+        t.consola.print(vista_cronometro(95, 600, t.paleta))
+        return
     total = minutos * 60
     fin = time.monotonic() + total
     try:

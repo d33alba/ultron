@@ -9,7 +9,7 @@ import httpx
 import typer
 
 from ultron.nucleo import dependencias, jsonio, motor, rutas
-from ultron.nucleo.ejecutor import Ejecutor
+from ultron.nucleo.ejecutor import Ejecutor, ErrorEjecucion
 from ultron.nucleo.entorno import detectar
 from ultron.ui import tema
 
@@ -86,11 +86,12 @@ def cmd_instalar(
     if faltan_apt:
         t.info("Los paquetes apt necesitan sudo. Ocupan aproximadamente 300–600 MB.")
     if not simular and not si and not typer.confirm("¿Instalar?", default=True):
-        raise typer.Exit()
+        raise typer.Exit(1)
 
     if faltan_apt:
-        ej.run(["sudo", "apt-get", "update"], check=False, timeout=None)
-        ej.run(["sudo", "apt-get", "install", "-y", *faltan_apt], check=False, timeout=None)
+        ej.run(["apt-get", "update"], sudo=True, check=False, timeout=None, interactivo=True)
+        ej.run(["apt-get", "install", "-y", *faltan_apt],
+               sudo=True, timeout=None, interactivo=True)
 
     gnome = detectar(ej).gnome_mayor
     _instalar_extensiones(t, ej, plan.extensiones, str(gnome or 46))
@@ -122,7 +123,9 @@ def _instalar_extensiones(t: tema.Tema, ej: Ejecutor, uuids: list[str], version:
         return
     cache = rutas.cache() / "extensiones"
     for uuid in uuids:
-        if ej.leer(["gnome-extensions", "info", uuid]).codigo == 0:
+        info = ej.leer(["env", "LC_ALL=C", "gnome-extensions", "info", uuid])
+        estado_ext = dependencias.interpretar_estado_extension(info)
+        if info.ok and estado_ext not in {"OUT OF DATE", "OUT_OF_DATE", "ERROR"}:
             t.ok(f"{uuid} ya está instalada")
             continue
         if ej.simular:
@@ -134,7 +137,7 @@ def _instalar_extensiones(t: tema.Tema, ej: Ejecutor, uuids: list[str], version:
             ej.run(["gnome-extensions", "install", "--force", str(zip_)])
             _registrar_instalada("extensiones", uuid)
             t.ok(f"{uuid} instalada")
-        except (RuntimeError, httpx.HTTPError) as e:
+        except (RuntimeError, ValueError, httpx.HTTPError, ErrorEjecucion) as e:
             t.aviso(f"{uuid}: {e}")
 
 
@@ -205,9 +208,11 @@ def cmd_desinstalar(
     ej = Ejecutor(simular=simular, consola=t.consola)
     if not simular and not si and not typer.confirm(
             "Se borrará todo lo que ha instalado Ultron. ¿Seguir?", default=False):
-        raise typer.Exit()
+        raise typer.Exit(1)
     if motor.leer_instantanea():
-        motor.salir(ej=ej)
+        if any(r.estado == "fallida" for r in motor.salir(ej=ej)):
+            t.error("La restauración quedó pendiente. Ejecuta: ultron salir")
+            raise typer.Exit(1)
     from ultron.nucleo import atajo
 
     atajo.quitar(ej)

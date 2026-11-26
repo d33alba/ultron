@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "d33alba" }]
-keywords = ["cli", "ubuntu", "gnome", "osint", "ia", "rice", "temas"]
+keywords = ["cli", "ubuntu", "gnome", "osint", "ia", "temas", "productividad"]
 classifiers = [
   "Environment :: Console",
   "Operating System :: POSIX :: Linux",
@@ -34,6 +34,11 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.5"]
+
+[project.urls]
+Repositorio = "https://github.com/d33alba/ultron"
+"Documentación" = "https://github.com/d33alba/ultron/tree/main/docs"
+Incidencias = "https://github.com/d33alba/ultron/issues"
 
 [project.scripts]
 ultron = "ultron.cli:main"

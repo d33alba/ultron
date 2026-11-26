@@ -14,6 +14,13 @@ from ultron.nucleo import rutas
 _ID = re.compile(r"^[a-z][a-z0-9_-]{1,30}$")
 
 
+def validar_id(id_modo: str) -> None:
+    """Valida un identificador antes de usarlo como nombre de carpeta."""
+    if not _ID.fullmatch(id_modo):
+        raise ErrorEsquema("Usa de 2 a 31 minúsculas, números, guiones o guiones bajos, "
+                           "empezando por una letra.")
+
+
 class ErrorEsquema(Exception):
     """modo.yaml no es válido."""
 

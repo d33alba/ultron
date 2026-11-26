@@ -199,6 +199,7 @@ def _guardar_revision(tarjeta: dict, nota: int) -> algoritmos.EstadoTarjeta:
 def cmd_repasar(
     mazo: str = typer.Argument(None, help="Mazo (vacío: todos)."),
     demo: bool = typer.Option(False, "--demo", help="Tarjetas de ejemplo, sin guardar nada."),
+    sin_pausa: bool = typer.Option(False, "--sin-pausa", help="Muestra todas las respuestas."),
 ) -> None:
     """Repaso con repetición espaciada (SM-2): espacio muestra la respuesta, 1-4 puntúa."""
     t = _t()
@@ -207,7 +208,7 @@ def cmd_repasar(
     if not tarjetas:
         t.ok("nada que repasar hoy. vuelve mañana.")
         return
-    interactivo = sys.stdin.isatty() and sys.stdout.isatty()
+    interactivo = not sin_pausa and sys.stdin.isatty() and sys.stdout.isatty()
     notas: list[int] = []
     for i, tj in enumerate(tarjetas, 1):
         c.print()

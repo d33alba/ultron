@@ -55,6 +55,16 @@ def _recursos(_ej: Ejecutor, _o: OpcionesDoctor) -> list[Chequeo]:
             continue
         detalle = "; ".join(f"{r.ruta} ({r.descripcion})" for r in faltan)
         destino = modo.dir_usuario() / "tema"
+        if _o.completo:
+            for recurso in faltan:
+                comando = f"ultron tema importar ./recursos --modo {modo.id}"
+                if recurso.ruta == "tema/musica.mp3":
+                    comando = f"ultron musica importar ./musica.mp3 --modo {modo.id}"
+                resultados.append(Chequeo(
+                    f"Recurso · {modo.nombre}", "aviso", recurso.descripcion,
+                    f"Prepara {recurso.ruta} y ejecuta: {comando}",
+                ))
+            continue
         resultados.append(
             Chequeo(
                 f"Recursos · {modo.nombre}", "aviso", f"Faltan: {detalle}",
