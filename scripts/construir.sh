@@ -9,13 +9,15 @@ mkdir -p logs
 PY=".venv/Scripts/python"; [ -x "$PY" ] || PY=".venv/bin/python"
 INICIO="${1:-01}"
 REINTENTOS=2
+# Modelo de Codex para construir Ultron. Se puede cambiar: CODEX_MODELO=gpt-6.2-sol bash ...
+MODELO="${CODEX_MODELO:-gpt-6.2-astra}"
 
 # Solo la línea de error del propio Codex: el registro también contiene el código del
 # proyecto, que menciona "quota" o "rate limit" y daba falsos positivos.
 limite_agotado() { grep -qiE "^ERROR: .*(usage limit|rate limit|quota)" "$1"; }
 
 ejecutar_codex() {  # $1 = prompt, $2 = log
-  codex exec --approve-for-me --skip-git-repo-check -C "$RAIZ" \
+  codex exec -m "$MODELO" --approve-for-me --skip-git-repo-check -C "$RAIZ" \
     --color never -o "${2%.log}.final.md" - <<<"$1" >"$2" 2>&1
   local codigo=$?
   if limite_agotado "$2"; then
