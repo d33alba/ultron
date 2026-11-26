@@ -13,3 +13,6 @@ logs/
 
 # Música de los modos (con derechos de autor): se añade con ultron musica importar
 ultron/modos/*/tema/musica.mp3
+
+# Recursos generados con GPT Images (se revisan antes de pasarlos al paquete)
+recursos/

@@ -499,3 +499,18 @@ def test_plan_dependencias():
     assert "desktop-cube@schneegans.github.com" in p.extensiones
     assert "Orbitron" in p.fuentes
     assert "nmap" not in p.apt
+
+
+def test_icono_propio_sustituye_carpetas_y_archivos(tmp_path, tema_base):
+    propios = tmp_path / "propios"
+    propios.mkdir()
+    Image.new("RGBA", (512, 512), (0, 56, 184, 255)).save(propios / "folder.png")
+    Image.new("RGBA", (512, 512), (255, 255, 255, 255)).save(propios / "text-x-generic.png")
+    destino = tmp_path / "Ultron-y"
+    iconos_gen.generar("y", iconos_gen.Ajustes(), destino, base=tema_base,
+                       dir_personalizados=propios)
+    carpeta = Image.open(destino / "48x48" / "places" / "folder.png").convert("RGB")
+    assert carpeta.size == (48, 48) and carpeta.getpixel((24, 24)) == (0, 56, 184)
+    assert not (destino / "48x48" / "apps" / "folder.png").exists()
+    archivo = destino / "scalable" / "mimetypes" / "text-x-generic.png"
+    assert archivo.exists() and not archivo.with_suffix(".svg").exists()

@@ -208,15 +208,51 @@ def _personalizados(dir_iconos: Path | None) -> list[Path]:
     return sorted(p for p in dir_iconos.iterdir() if p.suffix.lower() in (".png", ".svg"))
 
 
-def _copiar_personalizados(destino: Path, propios: list[Path]) -> int:
-    """Pone cada icono propio en todos los tamaños de apps/ (y scalable/)."""
+def _lado(ruta: Path) -> int | None:
+    """Tamaño en píxeles según la carpeta (48x48, 48x48@2x…); None si es scalable."""
+    for parte in ruta.parts:
+        m = re.match(r"^(\d+)x\d+(?:@(\d)x)?$", parte)
+        if m:
+            return int(m.group(1)) * int(m.group(2) or 1)
+    return None
+
+
+def _sustituir(icono: Path, existentes: list[Path]) -> int:
+    """Pone el icono propio en lugar de cada versión (todas las categorías y tamaños)."""
     from PIL import Image
 
+    n = 0
+    for viejo in existentes:
+        lado = _lado(viejo)
+        if viejo.is_symlink() or viejo.exists():
+            viejo.unlink()
+        if icono.suffix.lower() == ".svg":
+            shutil.copy2(icono, viejo.with_suffix(".svg"))
+        else:
+            with Image.open(icono) as img:
+                img.convert("RGBA").resize((lado or 256, lado or 256), Image.LANCZOS).save(
+                    viejo.with_suffix(".png"))
+        n += 1
+    return n
+
+
+def _copiar_personalizados(destino: Path, propios: list[Path]) -> int:
+    """Cada icono propio sustituye al del mismo nombre en cualquier categoría (carpetas,
+    archivos, apps…) y tamaño. Si el tema base no lo tiene, va a apps/."""
+    from PIL import Image
+
+    por_nombre: dict[str, list[Path]] = {}
+    for p in destino.rglob("*"):
+        if p.suffix.lower() in (".png", ".svg") and (p.is_file() or p.is_symlink()):
+            por_nombre.setdefault(p.stem, []).append(p)
     carpetas = sorted({p.parent for p in destino.rglob("*") if p.parent.name == "apps"})
     if not carpetas:
         carpetas = [destino / "scalable" / "apps"]
     n = 0
     for icono in propios:
+        if icono.stem in por_nombre:
+            n += _sustituir(icono, por_nombre[icono.stem])
+            continue
         for carpeta in carpetas:
             tamano = re.match(r"(\d+)x\d+", carpeta.parent.name) or re.match(
                 r"(\d+)x\d+", carpeta.parent.parent.name if carpeta.parent.parent else "")
