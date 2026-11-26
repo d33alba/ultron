@@ -61,7 +61,7 @@ def soporta_unicode() -> bool:
     lang = (os.environ.get("LC_ALL") or os.environ.get("LANG") or "").lower()
     if lang in {"c", "posix"}:
         return False
-    return "utf" in codificacion or "utf" in lang
+    return "utf" in (codificacion or lang)
 
 
 def animaciones_activas() -> bool:

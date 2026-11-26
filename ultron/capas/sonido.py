@@ -40,6 +40,11 @@ class CapaSonido(Capa):
             for f in origen.iterdir():
                 if f.suffix.lower() in EXTENSIONES_AUDIO:
                     self.ej.copiar(f, destino / "stereo" / f.name)
+        if self.ctx.modo.id == "netanyahu":
+            for nombre in ("message-new-instant.wav", "dialog-error.wav"):
+                if not any((origen / nombre).with_suffix(e).is_file() for e in EXTENSIONES_AUDIO):
+                    archivo = self.ctx.respaldo(f"tema/sonidos/stereo/{nombre}", self.ej)
+                    self.ej.copiar(archivo, destino / "stereo" / nombre)
         self.ej.escribir(destino / "index.theme", (
             f"[Sound Theme]\nName={destino.name}\nInherits=Yaru,freedesktop\n"
             "Directories=stereo\n\n[stereo]\nOutputProfile=stereo\n"))
@@ -49,7 +54,14 @@ class CapaSonido(Capa):
                           C.gv_bool(cfg.get("eventos", True)))
         entrada = self.ctx.recurso(cfg.get("entrada", "tema/sonidos/entrada.oga"))
         if not entrada.exists():
-            entrada = entrada.with_suffix(".wav")
+            entrada = self.ctx.respaldo(
+                Path(cfg.get("entrada", "tema/sonidos/entrada.oga")).with_suffix(".wav"),
+                self.ej,
+            )
+            if self.ctx.modo.id == "netanyahu" and not entrada.is_relative_to(origen):
+                from ultron.modos.netanyahu.generar_recursos import entrada_sonora
+
+                entrada = entrada_sonora(entrada, self.ej)
         prog = reproductor_efecto(self.ej)
         if entrada.exists() and prog:
             self.ej.run([*prog, str(entrada)], check=False, fondo=True)

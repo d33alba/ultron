@@ -47,6 +47,13 @@ def texto(ahora: float | None = None) -> str:
         partes.append(f"{tareas.get('hechas', 0)}/{tareas['total']}")
     if panel.get("modo") == "gaming" and panel.get("nivel") is not None:
         partes.append(f"LVL {panel['nivel']}")
+    if panel.get("modo") == "netanyahu":
+        try:
+            operacion = (_dir_estado() / "netanyahu.operacion").read_text(encoding="ascii")
+        except OSError:
+            operacion = ""
+        nombre = "".join(c for c in operacion[:70] if c.isalnum() or c in "_-")
+        partes.append(f"op:{nombre or 'osint'}")
     return " · ".join(partes)
 
 

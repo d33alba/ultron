@@ -1,0 +1,322 @@
+[
+  {
+    "nombre": "GitHub",
+    "url": "https://github.com/{usuario}"
+  },
+  {
+    "nombre": "GitLab",
+    "url": "https://gitlab.com/{usuario}"
+  },
+  {
+    "nombre": "Codeberg",
+    "url": "https://codeberg.org/{usuario}"
+  },
+  {
+    "nombre": "Bitbucket",
+    "url": "https://bitbucket.org/{usuario}/"
+  },
+  {
+    "nombre": "DockerHub",
+    "url": "https://hub.docker.com/u/{usuario}"
+  },
+  {
+    "nombre": "PyPI",
+    "url": "https://pypi.org/user/{usuario}/"
+  },
+  {
+    "nombre": "npm",
+    "url": "https://npmjs.com/~{usuario}"
+  },
+  {
+    "nombre": "RubyGems",
+    "url": "https://rubygems.org/profiles/{usuario}"
+  },
+  {
+    "nombre": "Packagist",
+    "url": "https://packagist.org/users/{usuario}/"
+  },
+  {
+    "nombre": "HuggingFace",
+    "url": "https://huggingface.co/{usuario}"
+  },
+  {
+    "nombre": "Kaggle",
+    "url": "https://kaggle.com/{usuario}"
+  },
+  {
+    "nombre": "Replit",
+    "url": "https://replit.com/@{usuario}"
+  },
+  {
+    "nombre": "CodePen",
+    "url": "https://codepen.io/{usuario}"
+  },
+  {
+    "nombre": "DEV",
+    "url": "https://dev.to/{usuario}"
+  },
+  {
+    "nombre": "Hashnode",
+    "url": "https://hashnode.com/@{usuario}"
+  },
+  {
+    "nombre": "Keybase",
+    "url": "https://keybase.io/{usuario}"
+  },
+  {
+    "nombre": "Launchpad",
+    "url": "https://launchpad.net/~{usuario}"
+  },
+  {
+    "nombre": "OpenStreetMap",
+    "url": "https://openstreetmap.org/user/{usuario}"
+  },
+  {
+    "nombre": "Wikimedia",
+    "url": "https://commons.wikimedia.org/wiki/User:{usuario}",
+    "texto": "There is currently no text in this page"
+  },
+  {
+    "nombre": "Flickr",
+    "url": "https://flickr.com/people/{usuario}/"
+  },
+  {
+    "nombre": "Unsplash",
+    "url": "https://unsplash.com/@{usuario}"
+  },
+  {
+    "nombre": "Pexels",
+    "url": "https://pexels.com/@{usuario}/"
+  },
+  {
+    "nombre": "Pixabay",
+    "url": "https://pixabay.com/users/{usuario}/"
+  },
+  {
+    "nombre": "Behance",
+    "url": "https://behance.net/{usuario}"
+  },
+  {
+    "nombre": "Dribbble",
+    "url": "https://dribbble.com/{usuario}"
+  },
+  {
+    "nombre": "ArtStation",
+    "url": "https://artstation.com/{usuario}"
+  },
+  {
+    "nombre": "DeviantArt",
+    "url": "https://deviantart.com/{usuario}"
+  },
+  {
+    "nombre": "Newgrounds",
+    "url": "https://{usuario}.newgrounds.com"
+  },
+  {
+    "nombre": "Vimeo",
+    "url": "https://vimeo.com/{usuario}"
+  },
+  {
+    "nombre": "Dailymotion",
+    "url": "https://dailymotion.com/{usuario}"
+  },
+  {
+    "nombre": "YouTube",
+    "url": "https://youtube.com/@{usuario}"
+  },
+  {
+    "nombre": "SoundCloud",
+    "url": "https://soundcloud.com/{usuario}"
+  },
+  {
+    "nombre": "Bandcamp",
+    "url": "https://{usuario}.bandcamp.com"
+  },
+  {
+    "nombre": "Mixcloud",
+    "url": "https://mixcloud.com/{usuario}/"
+  },
+  {
+    "nombre": "Last.fm",
+    "url": "https://last.fm/user/{usuario}"
+  },
+  {
+    "nombre": "Discogs",
+    "url": "https://discogs.com/user/{usuario}/"
+  },
+  {
+    "nombre": "Letterboxd",
+    "url": "https://letterboxd.com/{usuario}/"
+  },
+  {
+    "nombre": "Trakt",
+    "url": "https://trakt.tv/users/{usuario}"
+  },
+  {
+    "nombre": "MyAnimeList",
+    "url": "https://myanimelist.net/profile/{usuario}"
+  },
+  {
+    "nombre": "AniList",
+    "url": "https://anilist.co/user/{usuario}/"
+  },
+  {
+    "nombre": "Chess.com",
+    "url": "https://chess.com/member/{usuario}"
+  },
+  {
+    "nombre": "Lichess",
+    "url": "https://lichess.org/@/{usuario}"
+  },
+  {
+    "nombre": "Speedrun",
+    "url": "https://speedrun.com/users/{usuario}"
+  },
+  {
+    "nombre": "osu!",
+    "url": "https://osu.ppy.sh/users/{usuario}"
+  },
+  {
+    "nombre": "Steam",
+    "url": "https://steamcommunity.com/id/{usuario}/",
+    "texto": "The specified profile could not be found"
+  },
+  {
+    "nombre": "Itch.io",
+    "url": "https://{usuario}.itch.io"
+  },
+  {
+    "nombre": "GameJolt",
+    "url": "https://gamejolt.com/@{usuario}"
+  },
+  {
+    "nombre": "ModDB",
+    "url": "https://moddb.com/members/{usuario}"
+  },
+  {
+    "nombre": "NexusMods",
+    "url": "https://nexusmods.com/users/{usuario}"
+  },
+  {
+    "nombre": "Reddit",
+    "url": "https://reddit.com/user/{usuario}/"
+  },
+  {
+    "nombre": "Lemmy",
+    "url": "https://lemmy.world/u/{usuario}"
+  },
+  {
+    "nombre": "Mastodon",
+    "url": "https://mastodon.social/@{usuario}"
+  },
+  {
+    "nombre": "Fosstodon",
+    "url": "https://fosstodon.org/@{usuario}"
+  },
+  {
+    "nombre": "Bluesky",
+    "url": "https://bsky.app/profile/{usuario}.bsky.social",
+    "texto": "Profile not found"
+  },
+  {
+    "nombre": "Flipboard",
+    "url": "https://flipboard.com/@{usuario}"
+  },
+  {
+    "nombre": "Medium",
+    "url": "https://medium.com/@{usuario}"
+  },
+  {
+    "nombre": "Substack",
+    "url": "https://{usuario}.substack.com"
+  },
+  {
+    "nombre": "WordPress",
+    "url": "https://{usuario}.wordpress.com"
+  },
+  {
+    "nombre": "Tumblr",
+    "url": "https://{usuario}.tumblr.com"
+  },
+  {
+    "nombre": "Dreamwidth",
+    "url": "https://{usuario}.dreamwidth.org"
+  },
+  {
+    "nombre": "Neocities",
+    "url": "https://neocities.org/site/{usuario}"
+  },
+  {
+    "nombre": "Carrd",
+    "url": "https://{usuario}.carrd.co"
+  },
+  {
+    "nombre": "Linktree",
+    "url": "https://linktr.ee/{usuario}"
+  },
+  {
+    "nombre": "Beacons",
+    "url": "https://beacons.ai/{usuario}"
+  },
+  {
+    "nombre": "About.me",
+    "url": "https://about.me/{usuario}"
+  },
+  {
+    "nombre": "Patreon",
+    "url": "https://patreon.com/{usuario}"
+  },
+  {
+    "nombre": "Ko-fi",
+    "url": "https://ko-fi.com/{usuario}"
+  },
+  {
+    "nombre": "BuyMeACoffee",
+    "url": "https://buymeacoffee.com/{usuario}"
+  },
+  {
+    "nombre": "OpenCollective",
+    "url": "https://opencollective.com/{usuario}"
+  },
+  {
+    "nombre": "Liberapay",
+    "url": "https://liberapay.com/{usuario}/"
+  },
+  {
+    "nombre": "Duolingo",
+    "url": "https://duolingo.com/profile/{usuario}"
+  },
+  {
+    "nombre": "Strava",
+    "url": "https://strava.com/athletes/{usuario}"
+  },
+  {
+    "nombre": "Runkeeper",
+    "url": "https://runkeeper.com/user/{usuario}/profile"
+  },
+  {
+    "nombre": "Gravatar",
+    "url": "https://gravatar.com/{usuario}",
+    "texto": "Profile not found"
+  },
+  {
+    "nombre": "Disqus",
+    "url": "https://disqus.com/by/{usuario}/"
+  },
+  {
+    "nombre": "Hackaday",
+    "url": "https://hackaday.io/{usuario}"
+  },
+  {
+    "nombre": "Instructables",
+    "url": "https://instructables.com/member/{usuario}/"
+  },
+  {
+    "nombre": "Thingiverse",
+    "url": "https://thingiverse.com/{usuario}/designs"
+  },
+  {
+    "nombre": "Printables",
+    "url": "https://printables.com/@{usuario}"
+  }
+]

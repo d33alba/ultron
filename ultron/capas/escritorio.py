@@ -61,8 +61,8 @@ class CapaEscritorio(Capa):
     # --- aplicar -------------------------------------------------------------
     def _fondo(self, relativa: str | None, nombre: str) -> Path:
         if relativa:
-            ruta = self.ctx.recurso(relativa)
-            if ruta.exists():
+            ruta = self.ctx.respaldo(relativa, self.ej)
+            if ruta.exists() or (self.ej.simular and ruta != self.ctx.recurso(relativa)):
                 return ruta
         destino = rutas.cache() / "fondos" / f"{self.ctx.modo.id}-{nombre}.png"
         if not destino.exists() and not self.ej.simular:

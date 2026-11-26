@@ -90,6 +90,12 @@ def cmd_instalar(
     _instalar_propia(t, ej)
     _instalar_fuentes(t, ej, plan.fuentes)
     _generar_recursos(t, modo or None, simular)
+    if not simular and (not modo or "netanyahu" in modo):
+        from ultron.modos.netanyahu.funciones.ojo import version_valida
+
+        if not ej.existe("node") or not version_valida(ej.leer(["node", "--version"]).salida):
+            t.aviso("Ojo de Dios requiere Node 24.14+ de la rama 24 o Node 26. "
+                    "Ejecuta ultron ojo instalar para comprobar las opciones de instalación.")
 
     c.print(t.panel(
         "[bold]Cierra sesión y vuelve a entrar una vez[/] para que GNOME cargue las "

@@ -25,11 +25,22 @@ GDM_PERFIL = Path("/etc/dconf/profile/gdm")
 FONDOS = Path("/usr/share/backgrounds")
 
 
-def script_plymouth(p: dict[str, str]) -> str:
+def script_plymouth(p: dict[str, str], fotogramas: int = 0) -> str:
     """Script de Plymouth: logo con pulso, barra de progreso y petición de contraseña (LUKS)."""
     fr, fg, fb = (c / 255 for c in C.hex_a_rgb(p.get("fondo", "#000000")))
     ar, ag, ab = (c / 255 for c in C.hex_a_rgb(C.oscurecer(p.get("fondo", "#000000"), 0.5)))
     pr, pg, pb = (c / 255 for c in C.hex_a_rgb(p.get("primario", "#ffffff")))
+    animacion = ""
+    if fotogramas:
+        precarga = "\n".join(
+            f'cuadro[{i}] = Image("estrella-{i+1:02}.png").Scale('
+            'logo.image.GetWidth(), logo.image.GetHeight());' for i in range(fotogramas)
+        )
+        animacion = (
+            precarga + "\nfun dibujar() { tiempo++; logo.sprite.SetImage("
+            f"cuadro[Math.Min(Math.Int(tiempo / 4), {fotogramas - 1})]); }}\n"
+            "Plymouth.SetRefreshFunction(dibujar);"
+        )
     return f"""// Generado por Ultron
 Window.SetBackgroundTopColor({fr:.3f}, {fg:.3f}, {fb:.3f});
 Window.SetBackgroundBottomColor({ar:.3f}, {ag:.3f}, {ab:.3f});
@@ -57,6 +68,7 @@ fun refrescar() {{
   logo.sprite.SetOpacity(0.65 + 0.35 * Math.Sin(tiempo / 18));
 }}
 Plymouth.SetRefreshFunction(refrescar);
+{animacion}
 
 fun avance(duracion, fraccion) {{
   ancho = Math.Int(barra.ancho * fraccion);
@@ -150,7 +162,7 @@ class CapaArranque(Capa):
                 "partes": list(cfg.get("partes") or ["plymouth", "grub", "gdm"])}
 
     def _imagen(self, cfg: dict, clave: str, nombre: str) -> Path:
-        ruta = self.ctx.recurso(cfg.get(clave) or "tema/fondo.png")
+        ruta = self.ctx.respaldo(cfg.get(clave) or "tema/fondo.png", self.ej)
         if ruta.exists():
             return ruta
         destino = rutas.cache() / "arranque" / f"{self.ctx.modo.id}-{nombre}.png"
@@ -191,12 +203,18 @@ class CapaArranque(Capa):
     def _plymouth(self, cfg: dict, p: dict) -> None:
         d = PLYMOUTH / self.nombre_tema
         self.ej.run(["mkdir", "-p", str(d)], sudo=True)
-        logo = self.ctx.recurso(cfg.get("logo", "tema/arranque/logo.png"))
-        if not logo.exists():
+        logo = self.ctx.respaldo(cfg.get("logo", "tema/arranque/logo.png"), self.ej)
+        if not logo.exists() and not self.ej.simular:
             logo = self._imagen({}, "logo", "logo")
         self.ej.copiar(logo, d / "logo.png", sudo=True)
         self.ej.copiar(self._barra(p), d / "barra.png", sudo=True)
-        self.ej.escribir(d / f"{self.nombre_tema}.script", script_plymouth(p), sudo=True)
+        fotogramas = 12 if self.ctx.modo.id == "netanyahu" else 0
+        for i in range(1, fotogramas + 1):
+            nombre = f"estrella-{i:02}.png"
+            origen = self.ctx.respaldo(f"tema/arranque/{nombre}", self.ej)
+            self.ej.copiar(origen, d / nombre, sudo=True)
+        self.ej.escribir(d / f"{self.nombre_tema}.script",
+                         script_plymouth(p, fotogramas), sudo=True)
         archivo = d / f"{self.nombre_tema}.plymouth"
         self.ej.escribir(archivo, archivo_plymouth(self.nombre_tema, d), sudo=True)
         self.ej.run(["update-alternatives", "--install", str(ENLACE_ALT), ALTERNATIVA,

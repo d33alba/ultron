@@ -41,7 +41,7 @@ class CapaIconos(Capa):
     def aplicar(self, cfg: dict) -> None:
         destino = dir_iconos(self.ctx.modo.id)
         if not self.ej.simular:
-            emblema = self.ctx.recurso(cfg["emblema"]) if cfg.get("emblema") else None
+            emblema = self.ctx.respaldo(cfg["emblema"], self.ej) if cfg.get("emblema") else None
             aj = iconos_gen.ajustes_desde_cfg(cfg, cargar_tema(self.ctx.modo.id).paleta, emblema)
             propios = self.ctx.recurso(cfg.get("personalizados", "tema/iconos"))
             base = Path(cfg["base"]) if cfg.get("base") else None

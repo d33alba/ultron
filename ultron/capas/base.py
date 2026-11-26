@@ -24,6 +24,14 @@ class Contexto:
     def recurso(self, relativa: str | Path) -> Path:
         return self.modo.recurso(relativa)
 
+    def respaldo(self, relativa: str | Path, ej: Ejecutor) -> Path:
+        ruta = self.recurso(relativa)
+        if self.modo.id == "netanyahu" and not ruta.exists():
+            from ultron.modos.netanyahu.generar_recursos import recurso_generado
+
+            return recurso_generado(relativa, ej) or ruta
+        return ruta
+
 
 class Capa(ABC):
     nombre: ClassVar[str] = ""

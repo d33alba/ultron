@@ -71,6 +71,8 @@ class Ejecutor:
         entrada: str | None = None,
         timeout: float | None = 60,
         fondo: bool = False,
+        directorio: Path | None = None,
+        registro: Path | None = None,
     ) -> Resultado:
         cmd = [str(c) for c in cmd]
         if sudo:
@@ -78,7 +80,13 @@ class Ejecutor:
         self._registrar(cmd)
         if self.simular:
             return Resultado(0, "", "")
-        return self._ejecutar(cmd, check=check, entrada=entrada, timeout=timeout, fondo=fondo)
+        opciones = {}
+        if directorio is not None:
+            opciones["directorio"] = directorio
+        if registro is not None:
+            opciones["registro"] = registro
+        return self._ejecutar(cmd, check=check, entrada=entrada, timeout=timeout, fondo=fondo,
+                              **opciones)
 
     def leer(self, cmd: list[str], *, timeout: float | None = 15) -> Resultado:
         """Ejecuta un comando de solo lectura, también al simular. Nunca lanza."""
@@ -97,19 +105,25 @@ class Ejecutor:
         entrada: str | None = None,
         timeout: float | None = 60,
         fondo: bool = False,
+        directorio: Path | None = None,
+        registro: Path | None = None,
     ) -> Resultado:
         try:
             if fondo:
-                proc = subprocess.Popen(
-                    cmd,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    stdin=subprocess.DEVNULL,
-                    start_new_session=True,
+                from contextlib import nullcontext
+
+                salida = registro.open("ab") if registro is not None else nullcontext(
+                    subprocess.DEVNULL
                 )
+                with salida as flujo:
+                    proc = subprocess.Popen(
+                        cmd, stdout=flujo, stderr=flujo, stdin=subprocess.DEVNULL,
+                        start_new_session=True, cwd=directorio,
+                    )
                 return Resultado(0, str(proc.pid), "")
             p = subprocess.run(
-                cmd, input=entrada, capture_output=True, text=True, timeout=timeout
+                cmd, input=entrada, capture_output=True, text=True, timeout=timeout,
+                cwd=directorio,
             )
         except FileNotFoundError as e:
             raise ErrorEjecucion(f"No encuentro el programa «{cmd[0]}». ¿Está instalado?") from e

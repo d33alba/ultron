@@ -151,6 +151,12 @@ class CapaWidgets(Capa):
             "nombre": self.ctx.modo.nombre, "red": _interfaz_red(),
             "usuario": rutas.home().name,
         })
+        if self.ctx.modo.id == "netanyahu":
+            import shlex
+
+            comando = shlex.join([sys.executable, "-m", "ultron.modos.netanyahu.radar_status"])
+            valores["radar_publica"] = f"{comando} publica"
+            valores["radar_local"] = f"{comando} local"
         conf, auto = self._rutas()
         self.ej.escribir(conf, renderizar_conky(plantilla, valores))
         res = self.ej.run(["conky", "-c", str(conf)], check=False, fondo=True)

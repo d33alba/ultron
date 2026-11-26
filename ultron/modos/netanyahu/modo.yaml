@@ -24,6 +24,10 @@ capas:
     fuente: "JetBrains Mono 12"
     transparencia: 8
     cursor: block
+    cursor_color: "#FFFFFF"
+    paleta: ["#071028", "#E63946", "#497FE2", "#A5C5FF", "#0038B8", "#665DDA",
+             "#6EA8FE", "#DDEAFF", "#536484", "#FF7080", "#6EA8FE", "#C9DEFF",
+             "#4B80FF", "#A6A1FF", "#9BCFFF", "#FFFFFF"]
   escritorio:
     fondo: tema/fondo.png
     esquema: oscuro
@@ -42,6 +46,12 @@ capas:
   extensiones:
     activar: [user-theme@gnome-shell-extensions.gcampax.github.com, blur-my-shell@aunetx,
               burn-my-windows@schneegans.github.com]
+    ajustes:
+      /org/gnome/shell/extensions/blur-my-shell/panel/blur: "true"
+      /org/gnome/shell/extensions/blur-my-shell/panel/static-blur: "false"
+      /org/gnome/shell/extensions/blur-my-shell/panel/sigma: 12
+      /org/gnome/shell/extensions/blur-my-shell/panel/brightness: 0.82
+    perfil_tv: true
   sonido: {eventos: true}
   widgets: {fuente: "JetBrains Mono"}
   musica: {archivo: tema/musica.mp3, bucle: true, volumen: 70, fundido_entrada_s: 2}
@@ -55,3 +65,4 @@ funciones: [osint, radar, auditar, cve, filtrado, web, ctf, hackia, ojo]
 recursos_opcionales:
   - {ruta: tema/fondo.png, descripcion: "Fondo de Netanyahu (GPT Images)"}
   - {ruta: tema/musica.mp3, descripcion: "Música de flauta: ultron musica importar <url>"}
+  - {ruta: tema/iconos, descripcion: "Iconos personalizados de aplicaciones"}
