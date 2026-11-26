@@ -22,10 +22,6 @@ FUENTES: dict[str, str] = {
     "Rajdhani-Bold": "https://github.com/google/fonts/raw/main/ofl/rajdhani/Rajdhani-Bold.ttf",
     "Rajdhani-Medium": "https://github.com/google/fonts/raw/main/ofl/rajdhani/Rajdhani-Medium.ttf",
     "Inter": "https://github.com/google/fonts/raw/main/ofl/inter/Inter%5Bopsz,wght%5D.ttf",
-    "JetBrainsMonoNerd": (
-        "https://github.com/ryanoasis/nerd-fonts/raw/HEAD/patched-fonts/JetBrainsMono/"
-        "Ligatures/Regular/JetBrainsMonoNerdFont-Regular.ttf"
-    ),
 }
 
 

@@ -60,7 +60,6 @@ dependencias:
   apt: [nmap, whois, dnsutils, lynis, libimage-exiftool-perl, binwalk, steghide, john,
         hashid, git, traceroute, nodejs, npm]
   extensiones: [blur-my-shell@aunetx, burn-my-windows@schneegans.github.com]
-  fuentes: [JetBrainsMonoNerd]
 funciones: [osint, radar, auditar, cve, filtrado, web, ctf, hackia, ojo]
 recursos_opcionales:
   - {ruta: tema/fondo.png, descripcion: "Fondo de Netanyahu (GPT Images)"}

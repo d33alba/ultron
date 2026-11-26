@@ -2,6 +2,7 @@
 
 import os
 import sys
+from pathlib import Path
 
 import httpx
 import psutil
@@ -111,9 +112,11 @@ def fps(accion: str = typer.Argument("on", help="on u off.")) -> None:
         _fallar("Usa «ultron fps on» o «ultron fps off».", 2)
     if accion == "on":
         _dependencia(ej, "mangohud")
-        fuente = rutas.xdg_datos_raiz() / "fonts/ultron/JetBrainsMonoNerd.ttf"
+        # JetBrains Mono del paquete fonts-jetbrains-mono (lo instala `ultron instalar`)
+        fuente = next(iter(sorted(Path("/usr/share/fonts/truetype/jetbrains-mono").glob(
+            "JetBrainsMono*.ttf"))), None) if Path("/usr/share/fonts").is_dir() else None
         conf = ajustes.MANGOHUD
-        if fuente.is_file():
+        if fuente is not None and fuente.is_file():
             conf += f"font_file={fuente.as_posix()}\n"
         ej.escribir(rutas.xdg_config_raiz() / "MangoHud/MangoHud.conf", conf)
     if not ej.simular:

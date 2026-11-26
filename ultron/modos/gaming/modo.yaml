@@ -19,7 +19,7 @@ capas:
   terminal:
     fondo: "#0B0B16"
     texto: "#E6E6FF"
-    fuente: "JetBrainsMono Nerd Font 12"
+    fuente: "JetBrains Mono 12"
     transparencia: 12
     cursor: block
     cursor_color: "#FF00E6"
@@ -72,7 +72,7 @@ dependencias:
                 rounded-window-corners@fxgn, just-perfection-desktop@just-perfection,
                 hanabi-extension@jeffshee.github.io, space-bar@luchrioh,
                 openbar@neuromorph, just-perfection-desktop@just-perfection]
-  fuentes: [Orbitron, Rajdhani-Bold, Rajdhani-Medium, JetBrainsMonoNerd]
+  fuentes: [Orbitron, Rajdhani-Bold, Rajdhani-Medium]
 funciones: [juegos, turbo, hud, fps, clip, visualizador, perfil]
 recursos_opcionales:
   - {ruta: tema/fondo.mp4, descripcion: "Vídeo cyberpunk en bucle (Pexels o Pixabay)"}
