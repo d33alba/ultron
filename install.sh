@@ -16,6 +16,8 @@ main() {
     fi
 
     printf '%s\n' 'Se usará sudo para instalar pipx, GTK 4 y Git.'
+    # La entrada viene de la terminal a propósito (instalación con curl | bash).
+    # shellcheck disable=SC2024
     sudo apt install -y pipx python3-gi gir1.2-gtk-4.0 git </dev/tty
 
     if [[ -n "$origen" ]]; then

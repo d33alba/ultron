@@ -74,10 +74,14 @@ def dconf_leer(ej: Ejecutor, ruta: str) -> str | None:
 
 
 def dconf_escribir(ej: Ejecutor, ruta: str, valor: str) -> None:
+    if not ej.existe("dconf"):
+        return
     ej.run(["dconf", "write", ruta, valor])
 
 
 def dconf_restaurar(ej: Ejecutor, ruta: str, previo: str | None) -> None:
+    if not ej.existe("dconf"):
+        return
     if previo is None:
         ej.run(["dconf", "reset", ruta], check=False)
     else:

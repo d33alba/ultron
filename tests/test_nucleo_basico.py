@@ -166,7 +166,8 @@ def test_cli_entrar_simular_no_cambia(tmp_home):
 
 
 def test_cli_entrar_salir_real_en_home_temporal(tmp_home):
-    r = runner.invoke(app, ["entrar", "focus", "--si"])
+    # solo la capa shell: el resto llamaría al gsettings real del equipo que pasa los tests
+    r = runner.invoke(app, ["entrar", "focus", "--si", "--solo", "shell", "--sin-carga"])
     assert r.exit_code == 0, r.output
     assert shell.ruta_sh().exists()
     r = runner.invoke(app, ["estado"])
