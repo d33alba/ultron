@@ -9,6 +9,7 @@ ia:
     concretos de estructura, tiempos y lenguaje corporal.
   temperatura: 0.6
 capas:
+  lanzadores: {}
   shell:
     bienvenida: true
   terminal:

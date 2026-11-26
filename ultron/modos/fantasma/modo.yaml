@@ -10,6 +10,7 @@ ia:
     privacidad, la IA debería ser local.
   temperatura: 0.5
 capas:
+  lanzadores: {}
   shell:
     historial: false
     bienvenida: true

@@ -138,6 +138,13 @@ def crear_app():
 
 
 def abrir_selector() -> None:
+    """Compatibilidad: el selector antiguo ahora es la pantalla HANGAR del NEXUS."""
+    from ultron.ui.nexus import abrir
+
+    abrir(pantalla="hangar")
+
+
+def abrir_selector_clasico() -> None:
     resultado = crear_app().run()
     if not resultado:
         return

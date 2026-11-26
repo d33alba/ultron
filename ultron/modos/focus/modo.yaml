@@ -1,7 +1,7 @@
 id: focus
 nombre: FOCUS
 orden: 2
-lema: "Concentración total"
+lema: "Modo túnel: solo tú y tus apuntes"
 descripcion: "Estudio: estética limpia, resúmenes y flashcards de PDF, exámenes, plan, pomodoro."
 ia:
   personalidad: |
@@ -10,6 +10,7 @@ ia:
     Respuestas breves y ordenadas.
   temperatura: 0.4
 capas:
+  lanzadores: {}
   shell:
     alias:
       estudiar: "ultron pomodoro"
@@ -29,19 +30,40 @@ capas:
     animaciones: false
     tema_gtk: generar
     tema_shell: generar
-    dock: {autohide: true, intellihide: true, dash-max-icon-size: 36}
+    dock: {dock-position: LEFT, extend-height: false, dock-fixed: false, autohide: true,
+           intellihide: true, dash-max-icon-size: 32, show-trash: false, show-mounts: false,
+           transparency-mode: FIXED, background-opacity: 0.0, custom-background-color: true,
+           background-color: "#1E1F22"}
   iconos:
     monocromo: true
     tinte: {objetivo: "#8FBC8F"}
   cursor: {tamano: 24}
   extensiones:
-    activar: [user-theme@gnome-shell-extensions.gcampax.github.com]
-    desactivar: [burn-my-windows@schneegans.github.com,
-                 compiz-windows-effect@hermes83.github.com, desktop-cube@schneegans.github.com]
+    activar: [user-theme@gnome-shell-extensions.gcampax.github.com,
+              just-perfection-desktop@just-perfection]
+    desactivar: [burn-my-windows@schneegans.github.com, blur-my-shell@aunetx,
+                 compiz-windows-effect@hermes83.github.com, desktop-cube@schneegans.github.com,
+                 openbar@neuromorph, space-bar@luchrioh]
+    ajustes:
+      /org/gnome/shell/extensions/just-perfection/activities-button: false
+      /org/gnome/shell/extensions/just-perfection/app-menu: false
+      /org/gnome/shell/extensions/just-perfection/accessibility-menu: false
+      /org/gnome/shell/extensions/just-perfection/keyboard-layout: false
+      /org/gnome/shell/extensions/just-perfection/world-clock: false
+      /org/gnome/shell/extensions/just-perfection/weather: false
+      /org/gnome/shell/extensions/just-perfection/events-button: false
+      /org/gnome/shell/extensions/just-perfection/workspace-popup: false
+      /org/gnome/shell/extensions/just-perfection/window-demands-attention-focus: true
   sistema:
     notificaciones: false
     luz_nocturna: true
     escala_texto: 1.05
+    bloquear: [youtube.com, www.youtube.com, m.youtube.com, instagram.com, www.instagram.com,
+               tiktok.com, www.tiktok.com, twitter.com, x.com, www.x.com, reddit.com,
+               www.reddit.com, twitch.tv, www.twitch.tv, netflix.com, www.netflix.com,
+               facebook.com, www.facebook.com]
+  musica: {archivo: tema/ambiente.mp3, ambiente: lluvia, volumen: 35, bucle: true,
+           fundido_entrada_s: 4}
   sonido: {eventos: false}
   widgets: {fuente: "Inter", plantilla: tema/conky.conf}
 dependencias:

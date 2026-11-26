@@ -31,7 +31,7 @@ texto = "#C8C8C8"
 fondo = "#1E1F22"
 
 [glifos]
-marca = "·"
+marca = "◎"
 ok = "✓"
 error = "×"
 aviso = "!"

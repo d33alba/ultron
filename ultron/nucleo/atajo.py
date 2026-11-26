@@ -14,10 +14,11 @@ TECLA = "<Super>u"
 
 def comando_terminal() -> str:
     ultron = shutil.which("ultron") or "ultron"
-    for terminal, sep in (("gnome-terminal", "--"), ("ptyxis", "--"), ("kgx", "-e")):
+    for terminal, sep in (("gnome-terminal", "--full-screen --title=ULTRON --"),
+                          ("ptyxis", "--"), ("kgx", "-e")):
         if shutil.which(terminal):
-            return f"{terminal} {sep} {ultron}"
-    return f"x-terminal-emulator -e {ultron}"
+            return f"{terminal} {sep} {ultron} nexus"
+    return f"x-terminal-emulator -e {ultron} nexus"
 
 
 def instalar(ej: Ejecutor) -> bool:

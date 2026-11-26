@@ -72,13 +72,52 @@ def raiz(
     if ctx.invoked_subcommand is None:
         if sys.stdin.isatty() and sys.stdout.isatty():
             try:
-                from ultron.ui.selector import abrir_selector
+                from ultron.ui.nexus import abrir
             except ImportError:
                 pass
             else:
-                abrir_selector()
+                abrir()
                 return
         tema.actual().consola.print(ctx.get_help())
+
+
+# --- nexus -------------------------------------------------------------------
+
+
+@app.command("nexus")
+def cmd_nexus(
+    funcion: str = typer.Option(None, "--funcion", "-f", help="Abre directamente una función."),
+    modos: bool = typer.Option(False, "--modos", help="Empieza en la elección de modo."),
+) -> None:
+    """Centro de mando a pantalla completa: todo con flechas, Enter o el ratón."""
+    from ultron.ui.nexus import abrir
+
+    abrir(pantalla="hangar" if modos else None, funcion=funcion)
+
+
+@app.command("lanzar", hidden=True)
+def cmd_lanzar(
+    funcion: str = typer.Argument(..., help="Función del catálogo (p. ej. osint-dominio)."),
+    archivos: list[str] = typer.Argument(None, help="Archivos soltados sobre el lanzador."),
+) -> None:
+    """Lo usan los iconos del escritorio, el dock y Archivos: abre la función sin comandos."""
+    from ultron.ui import nexus
+    from ultron.ui.nexus import catalogo
+
+    ficha = catalogo.buscar_comando(funcion)
+    if ficha is None:
+        tema.actual().error(f"No conozco la función «{funcion}».")
+        raise typer.Exit(1)
+    archivos = [a for a in (archivos or []) if a]
+    if ficha.soltar and archivos:
+        codigo = 0
+        for archivo in archivos:
+            codigo = nexus.ejecutar_ultron(ficha.argv({ficha.soltar: archivo})) or codigo
+        nexus.pausa_final(codigo)
+    elif not ficha.campos:
+        nexus.pausa_final(nexus.ejecutar_ultron(ficha.argv()))
+    else:
+        nexus.abrir(funcion=ficha.comando)
 
 
 # --- modos -------------------------------------------------------------------

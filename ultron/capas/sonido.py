@@ -114,6 +114,38 @@ def reproducir(ej: Ejecutor, archivo: Path, cfg: dict) -> bool:
     return True
 
 
+def generar_ambiente(tipo: str, ej: Ejecutor, segundos: int = 40) -> Path:
+    """Sonido ambiente original (ruido marrón con olas de lluvia), en bucle sin cortes."""
+    import math
+    import random
+    import struct
+    import wave
+
+    destino = rutas.cache() / "ambiente" / f"{tipo}.wav"
+    if destino.exists() or ej.simular:
+        return destino
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    tasa, n = 22050, 22050 * segundos
+    rng = random.Random(7)
+    valor, muestras = 0.0, []
+    for i in range(n):
+        valor = (valor + rng.uniform(-1, 1) * 0.02) * 0.998
+        ola = 0.75 + 0.25 * math.sin(2 * math.pi * i / (tasa * (segundos / 4)))
+        gota = rng.uniform(-1, 1) * 0.04 if tipo == "lluvia" else 0.0
+        muestras.append(max(-1.0, min(1.0, (valor * 3.2 + gota) * ola)))
+    funde = tasa  # 1 s de fundido cruzado para que el bucle no se note
+    for i in range(funde):
+        t = i / funde
+        muestras[i] = muestras[i] * t + muestras[n - funde + i] * (1 - t)
+    muestras = muestras[: n - funde]
+    with wave.open(str(destino), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(tasa)
+        w.writeframes(b"".join(struct.pack("<h", int(m * 30000)) for m in muestras))
+    return destino
+
+
 @registrar_capa
 class CapaMusica(Capa):
     nombre = "musica"
@@ -127,6 +159,8 @@ class CapaMusica(Capa):
         if not self.ej.simular:
             estado.actualizar(musica_silenciada=False, musica_cfg=cfg)
         archivo = self.ctx.recurso(cfg.get("archivo", "tema/musica.mp3"))
+        if not archivo.exists() and cfg.get("ambiente"):
+            archivo = generar_ambiente(str(cfg["ambiente"]), self.ej)
         if not archivo.exists():
             if self.ctx.consola is not None:
                 self.ctx.consola.print(

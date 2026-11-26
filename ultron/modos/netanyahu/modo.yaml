@@ -12,6 +12,7 @@ ia:
     (un laboratorio, un CTF).
   temperatura: 0.6
 capas:
+  lanzadores: {}
   shell:
     alias:
       op: "ultron osint"
@@ -36,7 +37,8 @@ capas:
     tema_shell: generar
     dock: {dock-position: BOTTOM, extend-height: false, transparency-mode: FIXED,
            background-opacity: 0.85, custom-background-color: true,
-           background-color: "#0038B8", dash-max-icon-size: 48}
+           background-color: "#0038B8", dash-max-icon-size: 48, dock-fixed: true,
+           show-trash: false, show-mounts: false, running-indicator-style: DOTS}
   iconos:
     tinte: {objetivo: "#0038B8", intensidad: 0.85}
     emblema: tema/emblema.png
@@ -45,12 +47,16 @@ capas:
   cursor: {generar: true, color: "#0038B8", tamano: 32}
   extensiones:
     activar: [user-theme@gnome-shell-extensions.gcampax.github.com, blur-my-shell@aunetx,
-              burn-my-windows@schneegans.github.com]
+              burn-my-windows@schneegans.github.com, openbar@neuromorph]
     ajustes:
       /org/gnome/shell/extensions/blur-my-shell/panel/blur: "true"
       /org/gnome/shell/extensions/blur-my-shell/panel/static-blur: "false"
       /org/gnome/shell/extensions/blur-my-shell/panel/sigma: 12
       /org/gnome/shell/extensions/blur-my-shell/panel/brightness: 0.82
+      /org/gnome/shell/extensions/openbar/bartype: "'Islands'"
+      /org/gnome/shell/extensions/openbar/dark-bgcolor: "['0.0', '0.22', '0.72']"
+      /org/gnome/shell/extensions/openbar/dark-bcolor: "['1.0', '1.0', '1.0']"
+      /org/gnome/shell/extensions/openbar/bwidth: 1.5
     perfil_tv: true
   sonido: {eventos: true}
   widgets: {fuente: "JetBrains Mono"}

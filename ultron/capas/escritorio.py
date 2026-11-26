@@ -26,7 +26,8 @@ CLAVES = [
 ]
 CLAVES_DOCK = ["dock-position", "dash-max-icon-size", "extend-height", "transparency-mode",
                "background-opacity", "custom-background-color", "background-color",
-               "dock-fixed", "autohide", "intellihide"]
+               "dock-fixed", "autohide", "intellihide", "show-trash", "show-mounts",
+               "show-show-apps-button", "running-indicator-style", "apply-custom-theme"]
 ACENTOS = {"blue", "teal", "green", "yellow", "orange", "red", "pink", "purple", "slate"}
 
 

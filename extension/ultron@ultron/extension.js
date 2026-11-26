@@ -42,14 +42,58 @@ function comando(panel) {
     return panel.comando || 'ultron';
 }
 
-function abrirTerminal(argv) {
+function abrirTerminal(argv, completa = false) {
     for (const terminal of ['gnome-terminal', 'ptyxis', 'kgx', 'x-terminal-emulator']) {
         if (GLib.find_program_in_path(terminal)) {
             const sep = terminal === 'kgx' ? '-e' : '--';
-            lanzar([terminal, sep, ...argv]);
+            const extra = completa && terminal === 'gnome-terminal' ? ['--full-screen'] : [];
+            lanzar([terminal, ...extra, sep, ...argv]);
             return;
         }
     }
+}
+
+// Rótulo a pantalla completa al cambiar de modo: el «momento JARVIS» al cerrar la terminal.
+function mostrarRotulo(panel) {
+    const monitor = Main.layoutManager.primaryMonitor;
+    if (!monitor)
+        return;
+    const acento = panel.acento || '#00D7FF';
+    const caja = new St.BoxLayout({vertical: true, x_align: Clutter.ActorAlign.CENTER,
+        y_align: Clutter.ActorAlign.CENTER});
+    const textos = panel.modo
+        ? [[panel.glifo || '◆', `font-size: 110px; color: ${acento};`],
+            [`MODO ${panel.nombre}`, 'font-size: 76px; font-weight: 800; color: #FFFFFF;'],
+            [panel.lema ? `«${panel.lema}»` : '', `font-size: 30px; color: ${acento}; font-style: italic;`],
+            ['Funciones en el dock, el escritorio y el menú ◆  ·  Super+U abre el NEXUS',
+                'font-size: 20px; color: rgba(255,255,255,0.7); padding-top: 28px;']]
+        : [['◆', 'font-size: 90px; color: #FFFFFF;'],
+            ['UBUNTU RESTAURADO', 'font-size: 64px; font-weight: 800; color: #FFFFFF;'],
+            ['Todo ha vuelto exactamente como estaba', 'font-size: 24px; color: rgba(255,255,255,0.7);']];
+    for (const [texto, estilo] of textos) {
+        if (!texto)
+            continue;
+        caja.add_child(new St.Label({text: texto, style: estilo, x_align: Clutter.ActorAlign.CENTER}));
+    }
+    const fondo = new St.Bin({child: caja, reactive: false, x: monitor.x, y: monitor.y,
+        width: monitor.width, height: monitor.height,
+        style: 'background-color: rgba(0, 0, 0, 0.78);'});
+    Main.layoutManager.uiGroup.add_child(fondo);
+    fondo.opacity = 0;
+    caja.set_pivot_point(0.5, 0.5);
+    caja.scale_x = 1.25;
+    caja.scale_y = 1.25;
+    caja.ease({scale_x: 1, scale_y: 1, duration: 900, mode: Clutter.AnimationMode.EASE_OUT_EXPO});
+    fondo.ease({
+        opacity: 255, duration: 450, mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+        onComplete: () => {
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 2600, () => {
+                fondo.ease({opacity: 0, duration: 800, mode: Clutter.AnimationMode.EASE_IN_QUAD,
+                    onComplete: () => fondo.destroy()});
+                return GLib.SOURCE_REMOVE;
+            });
+        },
+    });
 }
 
 const Indicador = GObject.registerClass(
@@ -95,12 +139,27 @@ class UltronIndicador extends PanelMenu.Button {
 
     _reconstruirMenu(panel) {
         const modos = panel.modos || [];
-        const firma = JSON.stringify([panel.modo, modos]);
+        const firma = JSON.stringify([panel.modo, modos, panel.funciones || []]);
         if (firma === this._firmaMenu)
             return;
         this._firmaMenu = firma;
         this.menu.removeAll();
         const cmd = comando(panel);
+        const nexus = new PopupMenu.PopupMenuItem('◆  Abrir el NEXUS (Super+U)');
+        nexus.connect('activate', () => abrirTerminal([cmd, 'nexus'], true));
+        this.menu.addMenuItem(nexus);
+        const funciones = panel.funciones || [];
+        if (panel.modo && funciones.length) {
+            const sub = new PopupMenu.PopupSubMenuMenuItem(`Funciones de ${panel.nombre}`);
+            for (const f of funciones) {
+                const item = new PopupMenu.PopupMenuItem(`${f.icono}   ${f.titulo}`);
+                item.connect('activate', () => abrirTerminal([cmd, 'lanzar', f.id]));
+                sub.menu.addMenuItem(item);
+            }
+            this.menu.addMenuItem(sub);
+            sub.setSubmenuShown?.(true);
+        }
+        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         const titulo = new PopupMenu.PopupMenuItem('Cambiar de modo', {reactive: false});
         this.menu.addMenuItem(titulo);
         for (const modo of modos) {
@@ -116,9 +175,6 @@ class UltronIndicador extends PanelMenu.Button {
             salir.connect('activate', () => lanzar([cmd, 'salir']));
             this.menu.addMenuItem(salir);
         }
-        const abrir = new PopupMenu.PopupMenuItem('Abrir Ultron');
-        abrir.connect('activate', () => abrirTerminal([cmd]));
-        this.menu.addMenuItem(abrir);
     }
 });
 
@@ -164,6 +220,12 @@ export default class UltronExtension extends Extension {
 
     _refrescar() {
         const panel = leerPanel();
+        if (panel.entrada !== undefined && panel.entrada !== this._entrada) {
+            const reciente = Date.now() / 1000 - panel.entrada < 20;
+            if (this._entrada !== undefined && reciente)
+                mostrarRotulo(panel);
+            this._entrada = panel.entrada;
+        }
         this._indicador?.actualizar(panel);
         this._bocina?.actualizar(panel);
     }

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from datetime import datetime
@@ -107,13 +108,20 @@ def _panel_modo(modo: ModoDef | None) -> None:
     if modo is None:
         panel.escribir(
             modo=None, nombre=None, glifo=None, acento=None, musica_sonando=False, modos=modos,
+            funciones=[], lema=None, entrada=time.time(),
             comando=comando,
         )
         return
+    from ultron.ui.nexus import catalogo
     from ultron.ui.tema import cargar_tema
 
     tema = cargar_tema(modo.id)
+    funciones = [{"id": f.id, "titulo": f.titulo, "icono": f.icono}
+                 for f in catalogo.de_modo(modo.id) + catalogo.comunes()[:3]]
     panel.escribir(
+        funciones=funciones,
+        lema=modo.lema,
+        entrada=time.time(),
         modo=modo.id,
         nombre=modo.nombre,
         glifo=tema.glifos.get("marca", "●"),
