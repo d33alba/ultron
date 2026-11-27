@@ -31,6 +31,7 @@ capas:
              "#4B80FF", "#A6A1FF", "#9BCFFF", "#FFFFFF"]
   escritorio:
     fondo: tema/fondo.png
+    fondo_bloqueo: tema/bloqueo.png
     esquema: oscuro
     acento: blue
     tema_gtk: generar
