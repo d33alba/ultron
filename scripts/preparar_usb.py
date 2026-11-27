@@ -39,8 +39,10 @@ def rueda_ultron(destino: Path) -> None:
 def dependencias(destino: Path) -> None:
     rueda = next(destino.glob("ultron-*.whl"))
     for version in PYTHONS:
-        # pip evalúa los marcadores con el Python de este equipo: tomli (solo 3.10) va aparte
-        extra = ["tomli>=2"] if version == "3.10" else []
+        # pip evalúa los marcadores con el Python de este equipo: lo que solo pide 3.10
+        # (tomli para Ultron, exceptiongroup para anyio) va aparte
+        extra = ["tomli>=2", "exceptiongroup>=1.0.2", "typing_extensions>=4"] \
+            if version == "3.10" else []
         _pip("download", "--quiet", "--dest", str(destino), "--only-binary=:all:",
              "--platform", "manylinux2014_x86_64", "--platform", "manylinux_2_28_x86_64",
              "--python-version", version, "--implementation", "cp", str(rueda), *extra)
