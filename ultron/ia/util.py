@@ -88,8 +88,61 @@ def _intentos(candidato: str) -> list[str]:
     return [candidato, sin_comas, pythonico, comillas]
 
 
+_PENSAMIENTO = re.compile(r"<(think|thinking|reasoning)>.*?(</\1>|$)", re.S | re.I)
+
+
+def quitar_razonamiento(texto: str) -> str:
+    """Quita el razonamiento de los modelos que «piensan» (Qwen 3, DeepSeek R1…)."""
+    if not texto or "<" not in texto:
+        return texto
+    limpio = _PENSAMIENTO.sub("", texto)
+    if "</think>" in limpio:  # bloque abierto antes del inicio de la respuesta
+        limpio = limpio.split("</think>", 1)[1]
+    return limpio.lstrip()
+
+
+class FiltroRazonamiento:
+    """Lo mismo, pero trozo a trozo mientras llega una respuesta en streaming."""
+
+    def __init__(self) -> None:
+        self.dentro = False
+        self.pendiente = ""
+
+    def __call__(self, trozo: str) -> str:
+        texto, salida = self.pendiente + trozo, ""
+        self.pendiente = ""
+        while texto:
+            if self.dentro:
+                fin = re.search(r"</(think|thinking|reasoning)>", texto, re.I)
+                if not fin:
+                    self.pendiente = texto[-12:]
+                    return salida
+                texto, self.dentro = texto[fin.end():].lstrip("\n"), False
+                continue
+            ini = re.search(r"<(think|thinking|reasoning)>", texto, re.I)
+            if ini:
+                salida += texto[:ini.start()]
+                texto, self.dentro = texto[ini.end():], True
+                continue
+            corte = texto.rfind("<")
+            cola = texto[corte:].lower() if corte != -1 else ""
+            if cola and any(e.startswith(cola) for e in ("<think>", "<thinking>",
+                                                         "<reasoning>")):
+                salida, self.pendiente = salida + texto[:corte], texto[corte:]
+            else:
+                salida += texto
+            return salida
+        return salida
+
+    def final(self) -> str:
+        """Lo que quedó retenido por si era el inicio de una etiqueta."""
+        resto, self.pendiente = ("" if self.dentro else self.pendiente), ""
+        return resto
+
+
 def reparar_json(texto: str) -> Any:
     """Saca un JSON válido de lo que devuelva un modelo pequeño, o lanza RespuestaInvalida."""
+    texto = quitar_razonamiento(texto) if isinstance(texto, str) else texto
     if not isinstance(texto, str) or not texto.strip():
         raise E.RespuestaInvalida("La IA ha devuelto una respuesta vacía.")
     fuentes = [m.group(1) for m in _VALLA.finditer(texto)] + [texto]

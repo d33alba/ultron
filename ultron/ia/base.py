@@ -72,6 +72,13 @@ def traducir_excepcion(e: Exception, aj: AjustesIA) -> E.IAError:
         return E.TiempoAgotado(
             sugerencia="Los modelos locales pueden tardar; sube «timeout» en config.toml."
         )
+    if isinstance(e, httpx.ConnectError) and "CERTIFICATE" in str(e).upper():
+        return E.SinConexion(
+            f"El servidor {aj.url_base} usa un certificado que este equipo no reconoce "
+            "(normal en la IA de una red interna, como la de un instituto).",
+            "Confía en él con: ultron ia configurar --sin-verificar-tls "
+            "(o pon verificar_tls = false en ~/.config/ultron/config.toml).",
+        )
     if isinstance(e, (httpx.ConnectError, httpx.ConnectTimeout)):
         return E.SinConexion(
             f"No puedo conectar con {aj.url_base}.",
@@ -118,7 +125,7 @@ class ClienteHTTP:
         if es_url_local(aj.url_base) and espera < 300:
             espera = 300.0  # un modelo local en CPU puede tardar en dar la primera palabra
         self._http = httpx.Client(timeout=httpx.Timeout(espera, connect=10.0),
-                                  transport=transport)
+                                  transport=transport, verify=aj.verificar_tls)
 
     def _cabeceras(self) -> dict[str, str]:
         return {}

@@ -8,4 +8,5 @@ proveedor = "local"
 url_base = "http://localhost:11434/v1"
 modelo = "llama3.2"
 # clave = "sk-..."   # opcional en servidores locales
-timeout = 120        # segundos; los modelos locales pueden tardar
+timeout = 300        # segundos; los modelos locales o que razonan pueden tardar
+# verificar_tls = false   # solo si el servidor usa un certificado propio (red interna)

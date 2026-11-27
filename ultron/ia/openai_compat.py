@@ -11,6 +11,7 @@ import httpx
 from ultron.ia import errores as E
 from ultron.ia.ajustes import AjustesIA
 from ultron.ia.base import ClienteHTTP, lineas_sse, traducir_excepcion
+from ultron.ia.util import FiltroRazonamiento, quitar_razonamiento
 
 
 def normalizar_url(url: str) -> str:
@@ -88,7 +89,7 @@ class ClienteOpenAI(ClienteHTTP):
             r = self._peticion("POST", "/chat/completions", json=cuerpo)
         try:
             datos = r.json()
-            return datos["choices"][0]["message"]["content"] or ""
+            return quitar_razonamiento(datos["choices"][0]["message"]["content"] or "")
         except (ValueError, KeyError, IndexError, TypeError) as e:
             raise E.RespuestaInvalida(
                 "La respuesta no tiene el formato de OpenAI (sin «choices»).",
@@ -114,13 +115,17 @@ class ClienteOpenAI(ClienteHTTP):
             with self._http.stream("POST", self.base + "/chat/completions",
                                    headers=self._cabeceras(), json=cuerpo) as r:
                 self._comprobar(r)
+                filtro = FiltroRazonamiento()
                 for evento in lineas_sse(r.iter_lines()):
                     try:
                         trozo = evento["choices"][0].get("delta", {}).get("content")
                     except (KeyError, IndexError, AttributeError):
                         continue
+                    trozo = filtro(trozo) if trozo else ""
                     if trozo:
                         yield trozo
+                if resto := filtro.final():
+                    yield resto
         except httpx.HTTPError as e:
             raise traducir_excepcion(e, self.aj) from e
 

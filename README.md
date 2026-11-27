@@ -50,10 +50,29 @@ El instalador pide permiso para usar sudo, deja elegir modos y abre el asistente
 Cierra sesión y vuelve a entrar una vez para que GNOME cargue las extensiones. Abre el
 selector con `ultron` o **Super+U**.
 
-## Configurar tu IA
+## Conectar tu IA (un solo paso)
 
-Inicia el servidor, carga un modelo y usa el proveedor y la URL de la tabla. Sustituye
-los nombres de ejemplo por los que ofrece tu servidor.
+> **Ultron no trae ninguna IA, ninguna URL ni ninguna clave.** Funciona con la tuya.
+> Todo lo que no es IA funciona sin conectar nada.
+
+**Con un servidor por API compatible con OpenAI** (el caso más habitual, también el de un
+servidor de IA del centro), un único comando:
+
+```bash
+ultron ia configurar --url https://TU-SERVIDOR/v1 --modelo NOMBRE-DEL-MODELO
+```
+
+Pide la clave sin mostrarla, prueba la conexión al momento y la guarda solo para tu usuario
+(`~/.config/ultron/config.toml`, permisos 600). Sin `--url` abre un asistente que pregunta
+cada dato. Si el servidor usa un **certificado propio** (típico de una red interna), Ultron
+lo detecta y ofrece confiar en él; también vale añadir `--sin-verificar-tls`.
+
+Los modelos que «razonan» antes de responder (Qwen 3, DeepSeek R1…) están soportados: Ultron
+oculta su razonamiento y se queda con la respuesta. Comprueba la conexión cuando quieras con
+`ultron ia probar` y cambia de modelo con `ultron ia modelo NOMBRE`.
+
+**Con una IA en el propio equipo** (Ollama o LM Studio arrancados) no hace falta configurar
+nada: Ultron la detecta sola. Para elegir explícitamente:
 
 | Servidor | Ejemplo |
 |---|---|

@@ -33,8 +33,10 @@ class AjustesIA:
     url_base: str = ""
     modelo: str = ""
     clave: str | None = None
-    timeout: float = 120.0
+    timeout: float = 300.0
     origen: dict[str, str] = field(default_factory=dict)
+    # True, False (certificado propio de una red interna) o la ruta a un certificado CA
+    verificar_tls: bool | str = True
 
     @property
     def tipo(self) -> str:
@@ -117,7 +119,7 @@ def resolver(
 
     if not valores.get("url_base"):
         return None
-    timeout = float(archivo.get("timeout", 120))
+    timeout = float(archivo.get("timeout", 300))
     return AjustesIA(
         proveedor=valores.get("proveedor") or "local",
         url_base=valores["url_base"],
@@ -125,7 +127,21 @@ def resolver(
         clave=valores.get("clave"),
         timeout=timeout,
         origen=origen,
+        verificar_tls=_verificar_tls(archivo),
     )
+
+
+def _verificar_tls(archivo: dict) -> bool | str:
+    """ULTRON_VERIFICAR_TLS=0 o `verificar_tls = false` para certificados propios."""
+    entorno = os.environ.get("ULTRON_VERIFICAR_TLS")
+    valor = entorno if entorno is not None else archivo.get("verificar_tls", True)
+    if isinstance(valor, str):
+        if valor.strip().lower() in {"0", "no", "false", "falso"}:
+            return False
+        if valor.strip().lower() in {"1", "si", "sí", "true", ""}:
+            return True
+        return valor  # ruta a un certificado CA
+    return bool(valor)
 
 
 def guardar(aj: AjustesIA) -> None:
@@ -136,5 +152,6 @@ def guardar(aj: AjustesIA) -> None:
         "modelo": aj.modelo,
         "clave": aj.clave,
         "timeout": aj.timeout,
+        "verificar_tls": aj.verificar_tls,
     }
     config.guardar(datos)

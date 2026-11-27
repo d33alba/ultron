@@ -11,6 +11,7 @@ from typer.core import TyperGroup
 
 from ultron.ia import errores as E
 from ultron.ia.ajustes import PROVEEDORES, AjustesIA, detectar_locales, guardar, resolver
+from ultron.ia.base import es_url_local as _es_local
 from ultron.ia.cliente import crear, obtener_cliente, preguntar_stream
 from ultron.ia.personalidad import temperatura
 from ultron.ui import tema
@@ -206,12 +207,18 @@ def cmd_configurar(
     clave: str = typer.Option(None, "--clave", help="Clave de API (opcional en local)."),
     proveedor: str = typer.Option(None, "--proveedor", help="local, openai, anthropic…"),
     sin_probar: bool = typer.Option(False, "--sin-probar", help="Guarda sin hacer la prueba."),
+    sin_verificar_tls: bool = typer.Option(
+        False, "--sin-verificar-tls",
+        help="Acepta el certificado propio de un servidor interno (p. ej. el del instituto)."),
 ) -> None:
     """Asistente para conectar la IA (o sin preguntas con --url/--modelo)."""
     t = _t()
     c = t.consola
     if url or proveedor:
         prov = proveedor or "local"
+        if clave is None and not _es_local(url or "") and sys.stdin.isatty():
+            clave = typer.prompt("Clave de API (Enter si no hace falta)", default="",
+                                 hide_input=True, show_default=False) or None
         aj = AjustesIA(
             proveedor=prov,
             url_base=url or PROVEEDORES.get(prov, PROVEEDORES["local"])["url"],
@@ -220,6 +227,8 @@ def cmd_configurar(
         )
     else:
         aj = _asistente(t)
+    if sin_verificar_tls:
+        aj.verificar_tls = False
     if not sin_probar:
         cliente = crear(aj)
         with t.spinner_ctx("Probando la conexión"):
@@ -231,6 +240,14 @@ def cmd_configurar(
                 if disponibles:
                     aj.modelo = cliente.modelo = disponibles[0]
             diag = cliente.probar()
+        if not diag.ok and aj.verificar_tls is True and "certificado" in diag.mensaje:
+            t.aviso(diag.mensaje)
+            if typer.confirm("¿Confío en el certificado de este servidor y vuelvo a probar?",
+                             default=True):
+                aj.verificar_tls = False
+                cliente = crear(aj)
+                with t.spinner_ctx("Probando otra vez"):
+                    diag = cliente.probar()
         if not diag.ok:
             t.error(diag.mensaje)
             if diag.error and diag.error.sugerencia:

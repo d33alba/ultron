@@ -65,3 +65,32 @@ def test_dossier(tmp_path):
                            recomendaciones=["r"], secciones={"DNS": {"A": ["1.2.3.4"]}})
     texto = ruta.read_text(encoding="utf-8")
     assert "&lt;x&gt;" in texto and "1.2.3.4" in texto and "42" in texto
+
+
+def test_quita_razonamiento_de_modelos_que_piensan():
+    from ultron.ia.util import FiltroRazonamiento, quitar_razonamiento, reparar_json
+
+    assert quitar_razonamiento("<think>hmm</think>\n\nHola") == "Hola"
+    assert reparar_json('<think>{no}</think> {"x": 1}') == {"x": 1}
+    f = FiltroRazonamiento()
+    partes = ["Hola <thi", "nk>razono", "</th", "ink>\nmundo a<b"]
+    assert "".join(f(p) for p in partes) + f.final() == "Hola mundo a<b"
+
+
+def test_verificar_tls_por_entorno(monkeypatch):
+    from ultron.ia.ajustes import _verificar_tls
+
+    monkeypatch.setenv("ULTRON_VERIFICAR_TLS", "0")
+    assert _verificar_tls({}) is False
+    monkeypatch.delenv("ULTRON_VERIFICAR_TLS")
+    assert _verificar_tls({"verificar_tls": False}) is False
+    assert _verificar_tls({}) is True
+
+
+def test_error_de_certificado_explica_como_arreglarlo():
+    from ultron.ia.ajustes import AjustesIA
+    from ultron.ia.base import traducir_excepcion
+
+    aj = AjustesIA(url_base="https://ia.ejemplo/v1")
+    e = traducir_excepcion(httpx.ConnectError("[SSL: CERTIFICATE_VERIFY_FAILED]"), aj)
+    assert "certificado" in e.mensaje and "--sin-verificar-tls" in e.sugerencia
