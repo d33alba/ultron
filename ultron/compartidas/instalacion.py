@@ -42,6 +42,10 @@ def dir_extension_propia() -> Path | None:
 def descargar_extension(uuid: str, version_shell: str, destino: Path,
                         cliente: httpx.Client | None = None) -> Path:
     """Descarga el zip de una extensión compatible con esta versión de GNOME."""
+    if (sin_red := rutas.offline()) is not None:
+        local = sin_red / "extensiones" / version_shell / f"{uuid}.zip"
+        if local.is_file():
+            return local
     cliente = cliente or httpx.Client(timeout=30, follow_redirects=True)
     info = cliente.get(EXT_API, params={"uuid": uuid, "shell_version": version_shell})
     if info.status_code != 200:
@@ -191,6 +195,12 @@ def _instalar_fuentes(t: tema.Tema, ej: Ejecutor, fuentes: list[str]) -> None:
             continue
         if ej.simular:
             ej.historial.append(["#descargar-fuente", nombre])
+            continue
+        local = (rutas.offline() or Path("/nonexistent")) / "fuentes" / f"{nombre}.ttf"
+        if local.is_file():
+            destino.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(local, archivo)
+            t.ok(f"Fuente {nombre}")
             continue
         try:
             r = httpx.get(dependencias.FUENTES[nombre], timeout=60, follow_redirects=True)

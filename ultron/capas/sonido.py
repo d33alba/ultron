@@ -82,6 +82,13 @@ def detener_musica(ej: Ejecutor | None = None) -> None:
     ej = ej or Ejecutor()
     pid = estado.obtener("musica_pid")
     if not ej.simular:
+        try:  # se lanzó en su propia sesión: así cae también el paplay del bucle
+            import os
+            import signal
+
+            os.killpg(int(pid), signal.SIGTERM)
+        except (AttributeError, OSError, TypeError, ValueError):
+            pass
         C.matar(pid)
         estado.actualizar(musica_pid=None)
         panel.escribir(musica_sonando=False)
@@ -94,18 +101,42 @@ def silenciar(ej: Ejecutor | None = None) -> None:
     panel.escribir(musica_silenciada=True, musica_sonando=False)
 
 
+SIN_MP3 = (".ogg", ".oga", ".wav", ".flac")
+
+
+def orden_musica(ej: Ejecutor, archivo: Path, cfg: dict) -> list[str] | None:
+    """mpv si está; si no (PC sin sudo), VLC, ffplay o paplay en bucle con la copia .ogg."""
+    volumen = int(cfg.get("volumen", 80))
+    bucle = cfg.get("bucle", True)
+    if ej.existe("mpv"):
+        cmd = ["mpv", "--no-video", "--really-quiet", "--no-terminal", f"--volume={volumen}"]
+        if bucle:
+            cmd.append("--loop-file=inf")
+        fundido = float(cfg.get("fundido_entrada_s", 0))
+        if fundido > 0:
+            cmd.append(f"--af=lavfi=[afade=t=in:d={fundido}]")
+        return [*cmd, str(archivo)]
+    if ej.existe("cvlc"):
+        return ["cvlc", "--intf", "dummy", "--no-video", "--quiet", f"--gain={volumen / 100:.2f}",
+                *(["--loop"] if bucle else []), str(archivo)]
+    if ej.existe("ffplay"):
+        return ["ffplay", "-nodisp", "-loglevel", "quiet", "-volume", str(volumen),
+                *(["-loop", "0"] if bucle else ["-autoexit"]), str(archivo)]
+    compatible = archivo if archivo.suffix.lower() in SIN_MP3 else next(
+        (archivo.with_suffix(s) for s in SIN_MP3 if archivo.with_suffix(s).is_file()), None)
+    if compatible and ej.existe("paplay"):
+        vol = int(65536 * volumen / 100)
+        repetir = "while :; do" if bucle else "for _ in 1; do"
+        return ["bash", "-c", f'{repetir} paplay --volume={vol} "$0" || exit; done',
+                str(compatible)]
+    return None
+
+
 def reproducir(ej: Ejecutor, archivo: Path, cfg: dict) -> bool:
-    if not archivo.exists() or not ej.existe("mpv"):
+    cmd = orden_musica(ej, archivo, cfg) if archivo.exists() else None
+    if cmd is None:
         return False
     detener_musica(ej)
-    cmd = ["mpv", "--no-video", "--really-quiet", "--no-terminal",
-           f"--volume={int(cfg.get('volumen', 80))}"]
-    if cfg.get("bucle", True):
-        cmd.append("--loop-file=inf")
-    fundido = float(cfg.get("fundido_entrada_s", 0))
-    if fundido > 0:
-        cmd.append(f"--af=lavfi=[afade=t=in:d={fundido}]")
-    cmd.append(str(archivo))
     res = ej.run(cmd, check=False, fondo=True)
     if not ej.simular:
         estado.actualizar(musica_pid=int(res.salida) if res.salida.isdigit() else None,
@@ -167,11 +198,8 @@ class CapaMusica(Capa):
                     f"[apagado]  sin música: falta {archivo.name} "
                     f"(ultron musica importar <url> --modo {self.ctx.modo.id})[/]")
             return
-        if not self.ej.existe("mpv"):
-            if self.ctx.consola is not None:
-                self.ctx.consola.print("[aviso]  falta mpv para la música: sudo apt install mpv[/]")
-            return
-        reproducir(self.ej, archivo, cfg)
+        if not reproducir(self.ej, archivo, cfg) and self.ctx.consola is not None:
+            self.ctx.consola.print("[aviso]  falta mpv para la música: sudo apt install mpv[/]")
 
     def restaurar(self, previo: dict) -> None:
         detener_musica(self.ej)

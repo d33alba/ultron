@@ -272,6 +272,12 @@ def cmd_entrar(
     con_sudo = [cl.nombre for cl in clases if cl.requiere_sudo and cl(ej, ctx).disponible()[0]]
     if "bloquear" in (modo.capas.get("sistema") or {}):
         con_sudo.append("sistema (bloqueo de webs)")
+    from ultron.nucleo.entorno import puede_sudo
+
+    if con_sudo and not simular and not sin_sudo and not puede_sudo():
+        c.print("[apagado]  Sin permisos de administrador: me salto "
+                f"{', '.join(con_sudo)}; el resto del modo se aplica igual.[/]")
+        sin_sudo = True
     acepta_sudo = not sin_sudo
     if con_sudo and not simular and not sin_sudo:
         # se pregunta ANTES de la pantalla de carga, que tapa la terminal

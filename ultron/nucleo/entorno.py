@@ -72,3 +72,26 @@ def detectar(ej: Ejecutor | None = None) -> Entorno:
         sesion=sesion,
         grafico=grafico,
     )
+
+
+GRUPOS_ADMIN = {"sudo", "admin", "wheel"}
+
+
+def puede_sudo() -> bool:
+    """¿Este usuario puede ser administrador? (en el PC del centro no: se salta sin preguntar)."""
+    if os.environ.get("ULTRON_SIN_SUDO"):
+        return False
+    if platform.system() != "Linux":
+        return True
+    if hasattr(os, "geteuid") and os.geteuid() == 0:
+        return True
+    import grp
+    import shutil
+
+    if not (shutil.which("sudo") or shutil.which("pkexec")):
+        return False
+    try:
+        grupos = {grp.getgrgid(g).gr_name for g in os.getgroups()}
+    except (KeyError, OSError):
+        return True
+    return bool(grupos & GRUPOS_ADMIN)

@@ -1,0 +1,24 @@
+ULTRON EN USB · instalación sin sudo y sin internet
+===================================================
+
+Funciona en Ubuntu 22.04 o posterior, con GNOME o con KDE Plasma, sin ser administrador.
+
+1. Conecta el USB y abre una terminal (Konsole en KDE).
+2. Entra en la carpeta Ultron del USB. Por ejemplo:
+       cd /media/$USER/ULTRON/Ultron
+3. Instala:
+       bash instalar-usb.sh
+4. Abre una terminal nueva y escribe:
+       ultron
+
+Probar un modo:        ultron entrar netanyahu
+Volver al escritorio:  ultron salir
+Exhibición (3 min):    ultron exhibicion --rapida
+
+Sin sudo, Ultron se salta solo lo que necesita ser administrador (bloquear webs,
+pantalla de arranque) y el resto funciona igual.
+
+Conectar la IA del centro (un solo comando; pide la clave sin mostrarla):
+       ultron ia configurar --url https://SERVIDOR/v1 --modelo NOMBRE-DEL-MODELO
+
+Desinstalar:  ultron salir; ultron desinstalar --si; rm -rf ~/.local/share/ultron/venv ~/.local/bin/ultron

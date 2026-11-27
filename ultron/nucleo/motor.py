@@ -70,6 +70,13 @@ def capas_del_modo(
             desconocidas.append(nombre)
         else:
             clases.append(cls)
+    for cls in REGISTRO_CAPAS.values():
+        # capas que acompañan a otra (p. ej. plasma, el escritorio en KDE) y usan su cfg
+        base = getattr(cls, "cfg_de", None)
+        if (getattr(cls, "automatica", False) and cls not in clases and base in modo.capas
+                and (not solo_s or cls.nombre in solo_s or base in solo_s)
+                and cls.nombre not in excepto_s and base not in excepto_s):
+            clases.append(cls)
     clases.sort(key=lambda c: (c.orden, c.nombre))
     return clases, desconocidas
 
@@ -180,7 +187,7 @@ def entrar(
             progreso(nombre, "saltada")
             continue
         capa = cls(ej, ctx)
-        cfg = modo.capas.get(nombre) or {}
+        cfg = modo.capas.get(nombre) or modo.capas.get(getattr(cls, "cfg_de", "") or "") or {}
         progreso(nombre, "aplicando")
         ok, motivo = capa.disponible()
         if not ok:

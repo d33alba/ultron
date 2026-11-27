@@ -77,6 +77,11 @@ class Ejecutor:
     ) -> Resultado:
         cmd = [str(c) for c in cmd]
         if sudo:
+            from ultron.nucleo.entorno import puede_sudo
+
+            if not self.simular and not os.environ.get("ULTRON_SUDO") and not puede_sudo():
+                # sin esto, pkexec abriría una ventana pidiendo una contraseña que no hay
+                raise ErrorEjecucion("Este usuario no es administrador del equipo (sin sudo).")
             cmd = self._prefijo_sudo() + cmd
         self._registrar(cmd)
         if self.simular:

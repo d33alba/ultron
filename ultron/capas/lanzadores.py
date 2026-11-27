@@ -66,6 +66,9 @@ def terminal(titulo: str, pantalla_completa: bool = False) -> list[str]:
         return ["ptyxis", "--title", titulo, "--"]
     if shutil.which("kgx"):
         return ["kgx", "--title", titulo, "-e"]
+    if shutil.which("konsole"):  # KDE Plasma
+        base = ["konsole", "--hide-menubar", "-p", f"tabtitle={titulo}"]
+        return base + (["--fullscreen"] if pantalla_completa else []) + ["-e"]
     return ["x-terminal-emulator", "-e"]
 
 

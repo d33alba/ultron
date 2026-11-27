@@ -71,6 +71,12 @@ def modos_usuario() -> Path:
     return datos() / "modos"
 
 
+def offline() -> Path | None:
+    """Carpeta con todo lo descargable ya preparado (USB sin red): `ULTRON_OFFLINE`."""
+    valor = os.environ.get("ULTRON_OFFLINE")
+    return Path(valor) if valor and Path(valor).is_dir() else None
+
+
 def asegurar(ruta: Path) -> Path:
     ruta.mkdir(parents=True, exist_ok=True)
     return ruta
