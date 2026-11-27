@@ -115,7 +115,9 @@ def cmd_lanzar(
             codigo = nexus.ejecutar_ultron(ficha.argv({ficha.soltar: archivo})) or codigo
         nexus.pausa_final(codigo)
     elif not ficha.campos:
-        nexus.pausa_final(nexus.ejecutar_ultron(ficha.argv()))
+        codigo = nexus.ejecutar_ultron(ficha.argv())
+        if codigo or not ficha.ventana:
+            nexus.pausa_final(codigo)
     else:
         nexus.abrir(funcion=ficha.comando)
 

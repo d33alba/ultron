@@ -36,6 +36,7 @@ class Ficha:
     claves: str = ""  # palabras extra para la búsqueda en lenguaje natural
     escritorio: bool = False  # se pone como lanzador en el escritorio y el dock
     soltar: str = ""  # nombre del campo que recibe un archivo soltado sobre el lanzador
+    ventana: bool = False  # abre su propia ventana: la terminal se cierra sola si va bien
 
     @property
     def id(self) -> str:
@@ -80,7 +81,8 @@ FICHAS: tuple[Ficha, ...] = (
     # ── NETANYAHU ──────────────────────────────────────────────────────────────
     Ficha("netanyahu", "ojo abrir", "◈", "OJO DE DIOS",
           "Globo terráqueo en directo: aviones, satélites, barcos y cámaras del planeta.",
-          claves="mapa globo mundo aviones satelites planeta vigilancia", escritorio=True),
+          claves="mapa globo mundo aviones satelites planeta vigilancia", escritorio=True,
+          ventana=True),
     Ficha("netanyahu", "osint operacion", "⊕", "Investigar objetivo",
           "Todas las fuentes a la vez sobre un dominio o IP: exposición, CVE, mapa y dossier.",
           (A("objetivo", "Dominio, IP pública o URL"),
