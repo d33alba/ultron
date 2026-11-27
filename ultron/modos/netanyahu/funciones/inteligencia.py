@@ -19,7 +19,6 @@ import re
 import socket
 import time
 from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -69,32 +68,58 @@ def _panel(estados: dict[str, str], objetivo: str, t0: float) -> Any:
 
 
 def ejecutar_fuentes(consultas: dict[str, Consulta], objetivo: str,
-                     en_vivo: bool = True) -> dict[str, Any]:
-    """Lanza las consultas en paralelo; enseña cómo van llegando los resultados."""
+                     en_vivo: bool = True, limite: float = 75.0) -> dict[str, Any]:
+    """Lanza las consultas en paralelo y enseña cada una en cuanto responde.
+
+    Ninguna fuente puede colgar la operación: a los `limite` segundos las que no han
+    respondido se marcan como «sin respuesta» y se sigue con lo que haya (los hilos son
+    de fondo y no retienen el programa).
+    """
+    import queue
+    import threading
+
     estados = {n: "…" for n in consultas}
     resultados: dict[str, Any] = {}
+    cola: queue.Queue = queue.Queue()
     t0 = time.monotonic()
-    with httpx.Client(timeout=12, follow_redirects=False) as cliente, \
-            ThreadPoolExecutor(max_workers=10) as grupo:
-        futuros = {grupo.submit(F.seguro, f, cliente): n for n, f in consultas.items()}
-        vivo = Live(_panel(estados, objetivo, t0), console=interfaz().consola,
-                    refresh_per_second=8, transient=False) if en_vivo else None
-        if vivo:
-            vivo.start()
-        try:
-            for futuro in futuros:
-                nombre = futuros[futuro]
-                valor = futuro.result()
-                resultados[nombre] = valor
-                if isinstance(valor, dict) and set(valor) == {"aviso"}:
-                    estados[nombre] = "error"
-                else:
-                    estados[nombre] = "ok" if valor not in (None, [], {}) else "vacío"
+    cliente = httpx.Client(timeout=12, follow_redirects=False)
+
+    def trabajar(nombre: str, funcion: Consulta) -> None:
+        cola.put((nombre, F.seguro(funcion, cliente)))
+
+    for nombre, funcion in consultas.items():
+        threading.Thread(target=trabajar, args=(nombre, funcion), daemon=True).start()
+    vivo = Live(_panel(estados, objetivo, t0), console=interfaz().consola,
+                refresh_per_second=8, transient=False) if en_vivo else None
+    if vivo:
+        vivo.start()
+    try:
+        while len(resultados) < len(consultas):
+            restante = limite - (time.monotonic() - t0)
+            if restante <= 0:
+                break
+            try:
+                nombre, valor = cola.get(timeout=min(restante, 0.5))
+            except queue.Empty:
                 if vivo:
                     vivo.update(_panel(estados, objetivo, t0))
-        finally:
+                continue
+            resultados[nombre] = valor
+            if isinstance(valor, dict) and set(valor) == {"aviso"}:
+                estados[nombre] = "error"
+            else:
+                estados[nombre] = "ok" if valor not in (None, [], {}) else "vacío"
             if vivo:
-                vivo.stop()
+                vivo.update(_panel(estados, objetivo, t0))
+        for nombre in consultas:
+            if nombre not in resultados:
+                resultados[nombre] = {"aviso": "sin respuesta a tiempo"}
+                estados[nombre] = "error"
+        if vivo:
+            vivo.update(_panel(estados, objetivo, t0))
+    finally:
+        if vivo:
+            vivo.stop()
     return resultados
 
 

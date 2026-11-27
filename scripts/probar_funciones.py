@@ -180,7 +180,7 @@ def casos(r: dict[str, Path]) -> list[Caso]:
         C(["ctf", "codificar", "base64", "hola"]),
         C(["ctf", "hash", "5d41402abc4b2a76b9719d911017c592"]),
         C(["ctf", "estego", png]), C(["ctf", "archivo", "/bin/ls"]),
-        C(["hackia", "¿tengo puertos abiertos?"], "ia", entrada="y\nn\n"),
+        C(["hackia", "¿tengo puertos abiertos?"], "ia", tiempo=300, entrada="y\nn\n"),
         C(["ojo", "estado"]),
         # FOCUS
         C(["plan", "añadir", "Biología", "2026-12-18", "--temas", "3"]),
