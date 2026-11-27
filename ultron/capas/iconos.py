@@ -39,15 +39,20 @@ class CapaIconos(Capa):
         return {"claves": C.capturar_claves(self.ej, [(INTERFAZ, "icon-theme")]),
                 "desktop": []}
 
+    def preparar(self, cfg: dict) -> Path:
+        """Genera el tema (o lo reutiliza si su huella no ha cambiado) sin activarlo."""
+        destino = dir_iconos(self.ctx.modo.id)
+        emblema = self.ctx.respaldo(cfg["emblema"], self.ej) if cfg.get("emblema") else None
+        aj = iconos_gen.ajustes_desde_cfg(cfg, cargar_tema(self.ctx.modo.id).paleta, emblema)
+        propios = self.ctx.recurso(cfg.get("personalizados", "tema/iconos"))
+        base = Path(cfg["base"]) if cfg.get("base") else None
+        iconos_gen.generar(self.ctx.modo.id, aj, destino, base=base, dir_personalizados=propios)
+        return destino
+
     def aplicar(self, cfg: dict) -> None:
         destino = dir_iconos(self.ctx.modo.id)
         if not self.ej.simular:
-            emblema = self.ctx.respaldo(cfg["emblema"], self.ej) if cfg.get("emblema") else None
-            aj = iconos_gen.ajustes_desde_cfg(cfg, cargar_tema(self.ctx.modo.id).paleta, emblema)
-            propios = self.ctx.recurso(cfg.get("personalizados", "tema/iconos"))
-            base = Path(cfg["base"]) if cfg.get("base") else None
-            iconos_gen.generar(self.ctx.modo.id, aj, destino, base=base,
-                               dir_personalizados=propios)
+            self.preparar(cfg)
         else:
             self.ej.historial.append(["#generar-iconos", str(destino)])
         if self.ej.existe("gtk-update-icon-cache"):

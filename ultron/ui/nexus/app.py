@@ -1,6 +1,6 @@
 """NEXUS: el centro de mando de Ultron a pantalla completa (Textual).
 
-Tres pantallas: ARRANQUE (núcleo que se enciende), HANGAR (elegir modo con su holograma) y
+Tres pantallas: ARRANQUE (núcleo que se enciende), HANGAR (elegir modo viendo su escritorio) y
 PUENTE (el modo activo: telemetría, fichas de funciones y una barra donde se escribe lo que se
 quiere en lenguaje natural). Todo se maneja con flechas, Enter o el ratón; ninguna función
 exige saberse un comando. La app devuelve qué ejecutar y `nexus.abrir()` lo lanza en la propia
@@ -202,7 +202,7 @@ class Arranque(Screen):
 
 
 class Hangar(Screen):
-    """Elegir modo: lista, holograma del escritorio que vas a tener y qué cambia."""
+    """Elegir modo: lista, maqueta viva del escritorio que vas a tener y qué cambia."""
 
     BINDINGS = [
         Binding("enter", "activar", "Activar"), Binding("s", "restaurar", "Restaurar Ubuntu"),
@@ -252,7 +252,17 @@ class Hangar(Screen):
         lista.highlighted = self.indice
         lista.focus()
         self.pintar()
-        self.set_interval(1 / 10, self.animar)
+        self.set_interval(1 / 5, self.animar)
+        # los mosaicos de los fondos se calculan una vez en segundo plano y quedan en disco
+        import threading
+
+        threading.Thread(target=self._precalentar, daemon=True).start()
+
+    def _precalentar(self) -> None:
+        for m in self.modos:
+            ruta = vista.buscar_fondo(m)
+            if ruta is not None:
+                vista.colores_fondo(ruta)
 
     def on_option_list_option_highlighted(self, evento: OptionList.OptionHighlighted) -> None:
         self.indice = evento.option_index
@@ -272,9 +282,15 @@ class Hangar(Screen):
         holo = self.query_one("#holo", Static)
         ancho = max(20, min(120, holo.content_size.width or 60))
         alto = max(6, min(36, holo.content_size.height or 14))
-        holo.update(vista.holograma(m, p, ancho, alto, time.monotonic() - self.t0))
+        # lo mismo que pone la capa de lanzadores en el escritorio (5 del modo + 2 comunes)
+        funciones = [(f.icono, f.titulo) for f in
+                     [f for f in catalogo.de_modo(m.id) if f.escritorio][:5]
+                     + [f for f in catalogo.comunes() if f.escritorio][:2]]
+        holo.update(vista.maqueta(m, p, ancho, alto, time.monotonic() - self.t0, funciones))
         reloj = datetime.now().strftime("%H:%M:%S")
-        ok, ia = estado_ia()
+        if not hasattr(self, "_ia"):
+            self._ia = estado_ia()
+        ok, ia = self._ia
         cab = Text()
         cab.append(" ◆ U L T R O N ", style=f"bold {p['fondo']} on {p['primario']}")
         cab.append("  N E X U S ", style=f"bold {p['primario']}")

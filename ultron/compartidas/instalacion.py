@@ -134,6 +134,8 @@ def cmd_instalar(
     _instalar_propia(t, ej)
     _instalar_fuentes(t, ej, plan.fuentes)
     _generar_recursos(t, modo or None, simular)
+    if not simular:
+        _preparar_iconos(t, ej, modo or None)
     from ultron.capas.plasma import es_kde
     from ultron.nucleo import atajo
 
@@ -221,6 +223,28 @@ def _instalar_fuentes(t: tema.Tema, ej: Ejecutor, fuentes: list[str]) -> None:
             t.aviso(f"Fuente {nombre}: {e}")
     if ej.existe("fc-cache"):
         ej.run(["fc-cache", str(destino)], check=False, fondo=True)
+
+
+def _preparar_iconos(t: tema.Tema, ej: Ejecutor, modos: list[str] | None) -> None:
+    """Genera ya los temas de iconos de cada modo (quedan en caché con su huella): así la
+    primera vez que se entra en un modo tarda segundos y no medio minuto."""
+    from ultron.capas.base import Contexto
+    from ultron.capas.iconos import CapaIconos
+    from ultron.nucleo import registro
+
+    for m in registro.listar():
+        cfg = m.capas.get("iconos")
+        if (modos and m.id not in modos) or not cfg:
+            continue
+        capa = CapaIconos(ej, Contexto(modo=m, dir_modo=m.dir))
+        if not capa.disponible()[0]:
+            return
+        try:
+            with t.spinner_ctx(f"Preparando los iconos de {m.nombre}"):
+                capa.preparar(cfg)
+            t.ok(f"Iconos de {m.nombre} listos")
+        except Exception as e:  # noqa: BLE001 - se generarán al entrar en el modo
+            t.aviso(f"Iconos de {m.nombre}: se prepararán al entrar ({type(e).__name__})")
 
 
 def _generar_recursos(t: tema.Tema, modos: list[str] | None, simular: bool) -> None:

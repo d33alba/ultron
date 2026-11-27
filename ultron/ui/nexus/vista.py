@@ -1,4 +1,4 @@
-"""Piezas visuales del NEXUS: holograma del fondo, letras grandes, reactor, barras y telemetría."""
+"""Piezas visuales del NEXUS: maqueta del escritorio, letras, reactor, barras, telemetría."""
 
 from __future__ import annotations
 
@@ -32,73 +32,194 @@ def mezclar(a: str, b: str, t: float) -> str:
 
 
 def buscar_fondo(modo: Any) -> Path | None:
-    """El fondo del modo: el del tema, el generado o el de respaldo de la caché."""
+    """El fondo del modo: el del tema o el generado (sin recorrer carpetas: el NEXUS lo pide
+    muchas veces y en ~/.local/share/ultron también viven Python y el Ojo de Dios)."""
     candidatos: list[Path] = []
     try:
         candidatos.append(modo.recurso("tema/fondo.png"))
     except Exception:  # noqa: BLE001
         pass
     for base in (rutas.datos(), rutas.cache()):
-        if base.exists():
-            candidatos += sorted(base.rglob(f"*{modo.id}*fondo*.png"))
-            candidatos += sorted((base / "recursos" / modo.id).glob("fondo*.png"))
-    return next((c for c in candidatos if c.exists()), None)
+        candidatos += [base / "recursos" / modo.id / "fondo.png",
+                       base / "fondos" / f"{modo.id}-fondo.png"]
+    return next((c for c in candidatos if c.is_file()), None)
 
 
-@lru_cache(maxsize=16)
-def _miniatura(ruta: str, ancho: int, alto: int, mtime: float) -> list[list[tuple]]:
-    from PIL import Image
-
-    with Image.open(ruta) as img:
-        img = img.convert("RGB").resize((ancho, alto * 2), Image.LANCZOS)
-        px = img.load()
-        return [[(px[x, y * 2], px[x, y * 2 + 1]) for x in range(ancho)] for y in range(alto)]
+MOSAICO = (16, 8)  # colores de muestra del fondo (columnas, filas)
 
 
-def holograma(modo: Any, paleta: dict[str, str], ancho: int, alto: int, t: float = 0.0) -> Text:
-    """Miniatura del fondo en medios bloques, con una línea de escaneo que la recorre."""
-    ruta = buscar_fondo(modo)
-    filas: list[list[tuple]] | None = None
-    if ruta is not None:
-        try:
-            filas = _miniatura(str(ruta), ancho, alto, ruta.stat().st_mtime)
-        except Exception:  # noqa: BLE001
-            filas = None
-    if filas is None:
-        filas = _rejilla(paleta, ancho, alto)
-    barrido = int((t * 6) % (alto + 4)) - 2
+def colores_fondo(ruta: Path) -> list[list[str]] | None:
+    """Mosaico de 16x8 colores del fondo, guardado en disco: el PNG (5-9 MB) solo se abre
+    una vez por modo y versión del archivo."""
+    import json
+
+    try:
+        clave = f"{ruta}|{ruta.stat().st_mtime_ns}"
+    except OSError:
+        return None
+    cache = rutas.cache() / "nexus-mosaicos.json"
+    try:
+        datos = json.loads(cache.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        datos = {}
+    if clave in datos:
+        return datos[clave]
+    try:
+        from PIL import Image
+
+        with Image.open(ruta) as img:
+            img.draft("RGB", (256, 144))
+            peque = img.convert("RGB").resize(MOSAICO, Image.BOX)
+            px = peque.load()
+            mosaico = [["#{:02X}{:02X}{:02X}".format(*px[x, y]) for x in range(MOSAICO[0])]
+                       for y in range(MOSAICO[1])]
+    except Exception:  # noqa: BLE001
+        return None
+    datos = {k: v for k, v in datos.items() if not k.startswith(f"{ruta}|")}
+    datos[clave] = mosaico
+    try:
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache.write_text(json.dumps(datos), encoding="utf-8")
+    except OSError:
+        pass
+    return mosaico
+
+
+BANDAS = 32  # tramos de color por fila: suave a la vista y pocas piezas para Textual
+
+
+@lru_cache(maxsize=32)
+def _degradado(mosaico: tuple[tuple[str, ...], ...], alto: int) -> list[list[str]]:
+    """Interpola el mosaico de colores (bilineal) en `alto` filas de BANDAS tramos: se ve
+    como el fondo difuminado, sin cuadros."""
+    mf, mc = len(mosaico), len(mosaico[0])
+    rgb = [[_hex(c) for c in fila] for fila in mosaico]
+
+    def muestra(fx: float, fy: float) -> str:
+        x, y = fx * (mc - 1), fy * (mf - 1)
+        x0, y0 = int(x), int(y)
+        x1, y1 = min(mc - 1, x0 + 1), min(mf - 1, y0 + 1)
+        tx, ty = x - x0, y - y0
+        canal = [
+            (rgb[y0][x0][i] * (1 - tx) + rgb[y0][x1][i] * tx) * (1 - ty)
+            + (rgb[y1][x0][i] * (1 - tx) + rgb[y1][x1][i] * tx) * ty
+            for i in range(3)
+        ]
+        return "#{:02X}{:02X}{:02X}".format(*(round(v) for v in canal))
+
+    return [[muestra((b + 0.5) / BANDAS, y / max(1, alto - 1)) for b in range(BANDAS)]
+            for y in range(alto)]
+
+
+def _partir(texto: str, ancho: int) -> list[str]:
+    """Parte un título en líneas de `ancho` como mucho (por palabras)."""
+    lineas, actual = [], ""
+    for palabra in texto.split():
+        if actual and len(actual) + 1 + len(palabra) > ancho:
+            lineas.append(actual)
+            actual = palabra
+        else:
+            actual = f"{actual} {palabra}".strip()
+    if actual:
+        lineas.append(actual)
+    return [linea[:ancho] for linea in lineas] or [""]
+
+
+def _celdas_a_texto(celdas: list[list[tuple[str, str, str]]]) -> Text:
+    """Une las celdas con el mismo estilo en tramos: pocas piezas para Textual = fluido."""
     texto = Text()
-    for y, fila in enumerate(filas):
-        brillo = 0.35 if y == barrido else 0.0
-        for arriba, abajo in fila:
-            a = mezclar("#{:02X}{:02X}{:02X}".format(*arriba), paleta.get("primario", "#FFF"),
-                        brillo)
-            b = mezclar("#{:02X}{:02X}{:02X}".format(*abajo), paleta.get("primario", "#FFF"),
-                        brillo)
-            texto.append("▀", style=f"{a} on {b}")
-        if y < alto - 1:
+    for y, fila in enumerate(celdas):
+        tramo, estilo = "", None
+        for car, fg, bg in fila:
+            st = f"{fg} on {bg}"
+            if st != estilo and tramo:
+                texto.append(tramo, style=estilo)
+                tramo = ""
+            tramo += car
+            estilo = st
+        if tramo:
+            texto.append(tramo, style=estilo)
+        if y < len(celdas) - 1:
             texto.append("\n")
     return texto
 
 
-def _rejilla(paleta: dict[str, str], ancho: int, alto: int) -> list[list[tuple]]:
-    """Fondo de respaldo: degradado con rejilla de radar en los colores del modo."""
-    fondo, prim = paleta.get("fondo", "#101418"), paleta.get("primario", "#00D7FF")
-    cx, cy = ancho / 2, alto
-    filas = []
-    for y in range(alto):
-        fila = []
-        for x in range(ancho):
-            par = []
-            for sub in (0, 1):
-                yy = y * 2 + sub
-                d = math.hypot((x - cx) / ancho, (yy - cy) / (alto * 2))
-                anillo = 0.5 if abs((d * 10) % 1 - 0.5) < 0.06 else 0.0
-                rej = 0.25 if x % 8 == 0 or yy % 8 == 0 else 0.0
-                par.append(_hex(mezclar(fondo, prim, max(anillo, rej) * (1 - d))))
-            fila.append(tuple(par))
-        filas.append(fila)
-    return filas
+def maqueta(modo: Any, paleta: dict[str, str], ancho: int, alto: int, t: float = 0.0,
+            funciones: list[tuple[str, str]] | None = None) -> Text:
+    """Maqueta viva del escritorio que vas a tener: colores del fondo, barra superior, dock
+    en su sitio real, columna de funciones, y si hay música y voz. Barata de dibujar."""
+    prim = paleta.get("primario", "#00D7FF")
+    acento = paleta.get("acento", prim)
+    texto_c = paleta.get("texto", "#E6E6E6")
+    fondo_p = paleta.get("fondo", "#0B0F14")
+    ruta = buscar_fondo(modo)
+    mosaico = colores_fondo(ruta) if ruta else None
+    if not mosaico:
+        mosaico = [[fondo_p, mezclar(fondo_p, prim, 0.3)], [mezclar(fondo_p, prim, 0.12), fondo_p]]
+    barrido = int((t * 5) % (alto + 6)) - 3
+    filas = _degradado(tuple(map(tuple, mosaico)), alto)
+
+    def color_fondo(x: int, y: int) -> str:
+        base = filas[y][min(BANDAS - 1, x * BANDAS // ancho)]
+        return mezclar(base, prim, 0.18) if y == barrido else base
+
+    celdas = [[(" ", texto_c, color_fondo(x, y)) for x in range(ancho)] for y in range(alto)]
+
+    def escribir(x: int, y: int, cadena: str, fg: str, bg: str | None = None) -> None:
+        for i, car in enumerate(cadena):
+            if 0 <= x + i < ancho and 0 <= y < alto:
+                celdas[y][x + i] = (car, fg, bg or celdas[y][x + i][2])
+
+    capas = getattr(modo, "capas", {}) or {}
+    esc = capas.get("escritorio") or {}
+    dock = esc.get("dock") or {}
+    # barra superior
+    barra_bg = mezclar(fondo_p, "#000000", 0.35)
+    escribir(0, 0, " " * ancho, texto_c, barra_bg)
+    escribir(1, 0, f"◆ {getattr(modo, 'nombre', '')}", prim, barra_bg)
+    reloj = time.strftime("%H:%M")
+    escribir(max(0, ancho - len(reloj) - 6), 0, f"{reloj}  ◖◗", texto_c, barra_bg)
+    # dock
+    fn = funciones or []
+    dock_bg = dock.get("background-color") or mezclar(fondo_p, prim, 0.25)
+    oculto = bool(dock.get("autohide")) and not dock.get("dock-fixed")
+    iconos = [ic for ic, _ in fn][:8] or ["◆"]
+    izq = str(dock.get("dock-position", "BOTTOM")).upper() == "LEFT"
+    margen_x = 1
+    if izq and not oculto:
+        alto_dock = alto - 1 if dock.get("extend-height") else min(alto - 2, len(iconos) * 2 + 1)
+        y0 = 1 if dock.get("extend-height") else max(1, (alto - alto_dock) // 2)
+        for y in range(y0, y0 + alto_dock):
+            escribir(0, y, "   ", texto_c, dock_bg)
+        for i, ic in enumerate(iconos):
+            escribir(1, y0 + 1 + i * 2, ic, "#FFFFFF", dock_bg)
+        margen_x = 5
+    elif not oculto:
+        tira = " " + "  ".join(iconos) + " "
+        x0 = max(0, (ancho - len(tira)) // 2)
+        escribir(x0, alto - 1, tira, "#FFFFFF", dock_bg)
+    else:
+        escribir(max(0, ancho // 2 - 7), alto - 1, "▁▁ dock oculto ▁▁",
+                 mezclar(texto_c, fondo_p, 0.4), None)
+    # iconos del escritorio: losetas con su nombre debajo, como en el escritorio real
+    paso_x, paso_y = 12, 4
+    por_fila = max(1, (ancho - margen_x - 2) // paso_x)
+    for i, (ic, titulo) in enumerate(fn):
+        col, fila = i % por_fila, i // por_fila
+        x, y = margen_x + 1 + col * paso_x, 2 + fila * paso_y
+        if y + 2 >= alto - 2:
+            break
+        escribir(x + 3, y, f" {ic} ", fondo_p, prim)
+        for j, linea in enumerate(_partir(titulo, paso_x - 2)[:2]):
+            escribir(x + (paso_x - 1 - len(linea)) // 2, y + 1 + j, linea, "#FFFFFF")
+    # insignias: música y voz
+    insignias = []
+    if capas.get("musica"):
+        insignias.append("♪ música")
+    insignias.append("◉ voz")
+    chapa = "  ".join(insignias)
+    escribir(max(0, ancho - len(chapa) - 2), alto - 2, f" {chapa} ", fondo_p, acento)
+    return _celdas_a_texto(celdas)
 
 
 def letras_grandes(texto: str, color: str, color2: str | None = None) -> Text:
