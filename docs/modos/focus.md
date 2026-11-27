@@ -7,7 +7,7 @@ directorio XDG. Las salidas de esta tabla describen lo que verás.
 | Ejemplo | Salida |
 |---|---|
 | `ultron resumen tema.pdf` | Resumen del documento. |
-| `ultron flashcards tema.pdf` | Tarjetas generadas y nombre del mazo. |
+| `ultron flashcards crear tema.pdf` | Tarjetas generadas y nombre del mazo. |
 | `ultron flashcards lista` | Tabla de mazos guardados. |
 | `ultron flashcards exportar biologia` | Ruta al paquete Anki. |
 | `ultron flashcards borrar biologia` | Confirmación de eliminación del mazo. |
@@ -26,3 +26,7 @@ directorio XDG. Las salidas de esta tabla describen lo que verás.
 | `ultron stats --demo` | Mapa de calor y horas de ejemplo. |
 
 Usa `ultron salir` para restaurar el escritorio.
+
+## Escritorio de estudio
+
+Focus reduce la barra superior con Just Perfection, oculta el dock izquierdo cuando no se usa y silencia las notificaciones. Activa la luz nocturna. La capa de sistema puede bloquear dominios como YouTube, Instagram, Reddit y Twitch mientras esté activo el modo. El bloqueo requiere permisos de administrador. Si falta la pista de ambiente, Ultron puede generar sonido de lluvia para reproducirlo en bucle.

@@ -34,3 +34,11 @@ configuración efectiva. Con un servidor remoto, los mensajes se envían a ese s
 | IA sin configurar | Ejecuta `ultron ia configurar`. |
 
 `ultron doctor --completo` revisa también el modelo y la conexión.
+
+## Modelos locales y certificados propios
+
+Los modelos que razonan pueden incluir su razonamiento entre etiquetas `<think>` y `</think>`. Ultron descarta ese bloque y usa la respuesta final. Esto permite procesar también respuestas que deben contener JSON.
+
+Para una API local compatible con OpenAI, el cliente puede recibir la respuesta por fragmentos (*streaming*) y reunirlos cuando la función necesita el texto completo. El tiempo de espera predeterminado es de 300 s. En streaming, el límite de lectura cuenta la espera entre fragmentos. Una generación larga puede durar más mientras el servidor siga enviando datos.
+
+La verificación TLS está activada por defecto. Si el servidor usa un certificado propio, el asistente ofrece repetir la prueba sin verificarlo. En un servidor de confianza puedes elegirlo explícitamente con `ultron ia configurar --url https://TU-SERVIDOR/v1 --modelo MODELO --sin-verificar-tls`. El ajuste equivalente en la sección `[ia]` de `~/.config/ultron/config.toml` es `verificar_tls = false`. Vuelve a `true` para comprobar de nuevo la identidad del servidor.

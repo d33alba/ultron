@@ -50,3 +50,17 @@ y se sirve localmente. `ultron ojo parar` cierra el servidor.
 | `ultron ojo actualizar` | Resultado de la actualización del visor. |
 | `ultron ojo parar` | Confirmación de parada del servidor. |
 | `ultron netanyahu generar-recursos` | Genera los recursos visuales y sonoros de respaldo. |
+
+## Investigar desde el centro de mando
+
+Abre la tarjeta de la tarea en NEXUS. El formulario pide los datos del objetivo. El arsenal reúne **19 fuentes**. Cada operación selecciona las que corresponden al tipo de dato.
+
+| Tarea | Qué obtienes |
+|---|---|
+| Operación completa · `ultron osint operacion example.org` | Cruza información pública sobre un dominio, IP pública o URL y genera un dossier HTML. Si hay un navegador Chromium, Chrome o Edge compatible, intenta exportarlo también a PDF. `--no-abrir` guarda el resultado sin abrirlo. |
+| Enlace sospechoso · `ultron osint url ENLACE` | Sigue redirecciones y contrasta el destino con el registro y los servicios de reputación. El veredicto muestra las señales detectadas. |
+| Foto · `ultron osint imagen foto.jpg` | Lee los metadatos y las coordenadas si existen. Ofrece cuatro buscadores inversos. Para una foto local, tú decides si la subes. |
+| Huella digital · `ultron osint huella --alias MI_ALIAS` | Reúne datos públicos para revisar tu propia exposición. Para otra persona, usa `--para NOMBRE` **solo con su consentimiento explícito**. El programa pide confirmación. |
+| Arsenal · `ultron osint fuentes` | Lista las fuentes por tipo y las integraciones disponibles. Shodan, VirusTotal y Have I Been Pwned admiten claves opcionales. Consulta `ultron osint clave --help` para registrarlas. |
+
+**Ojo de Dios** abre God's Eye View de Bilawal Sidhu sin claves. En el primer arranque necesita conexión. Si falta una versión compatible de Node, ofrece descargar Node 24 portátil, comprueba su SHA-256 y lo instala para Ultron. En el visor pulsa **Ctrl+K** para elegir capas, como vuelos o satélites. La opción `--mapa` de una operación permite situar el objetivo en el visor.

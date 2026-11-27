@@ -18,6 +18,7 @@ from ultron.nucleo.doctor import ejecutar as ejecutar_doctor
 from ultron.nucleo.ejecutor import Ejecutor, ErrorEjecucion
 from ultron.nucleo.esquema import ErrorEsquema
 from ultron.ui import animaciones, banner, tema
+from ultron.ui import espanol as _espanol
 
 
 class GrupoUltron(TyperGroup):
@@ -36,6 +37,8 @@ class GrupoUltron(TyperGroup):
                 tema.actual().aviso("No se pudo guardar o anunciar la experiencia.")
         return resultado
 
+
+_espanol.aplicar()
 
 app = typer.Typer(
     cls=GrupoUltron,
@@ -304,6 +307,9 @@ def cmd_entrar(
     final.consola.print(f"\n[acento]{final.frase('ok', 'Modo activado.')}[/]")
     final.consola.print("[apagado]Abre una terminal nueva para ver el prompt del modo. "
                         "Para deshacerlo todo: ultron salir[/]")
+    from ultron.nucleo import voz
+
+    voz.anunciar_modo(modo.id)
 
 
 @app.command("salir")
@@ -326,6 +332,10 @@ def cmd_salir(
             t2.error(f"{r.nombre}: {r.motivo}")
         raise typer.Exit(1)
     t2.ok("Sistema restaurado." if not simular else "Simulación de salida completa.")
+    if not simular:
+        from ultron.nucleo import voz
+
+        voz.anunciar_modo(None)
 
 
 @app.command("estado")

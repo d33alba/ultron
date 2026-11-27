@@ -1,44 +1,26 @@
 # Ultron
 
-```text
- _   _ _   _____ ____   ___  _   _
-| | | | | |_   _|  _ \ / _ \| \ | |
-| | | | |   | | | |_) | | | |  \| |
-| |_| | |___| | |  _ <| |_| | |\  |
- \___/|_____|_| |_| \_\\___/|_| \_|
-```
+Ultron convierte Ubuntu 24.04+ con GNOME en cinco escritorios reversibles. Abre **NEXUS** con **Super+U** o escribe `ultron` en una terminal. Elige un modo, abre una tarjeta y rellena el formulario para usar sus herramientas sin aprender comandos. La IA es opcional.
 
-**Un escritorio para cada misión.**
+| Modo | Qué cambia y para qué sirve |
+|---|---|
+| [Netanyahu](docs/modos/netanyahu.md) | Dock azul fijo abajo. Investiga enlaces y fotos, prepara informes OSINT y consulta vuelos y satélites. |
+| [Focus](docs/modos/focus.md) | Barra mínima, dock izquierdo ocultable y lluvia de fondo. Bloquea distracciones, organiza el estudio y crea tarjetas desde apuntes. |
+| [Gaming](docs/modos/gaming.md) | Dock fijo a la izquierda a toda altura. Abre juegos y consulta el rendimiento del equipo. |
+| [Presentación](docs/modos/presentacion.md) | Dock ocultable, texto ampliado y avisos silenciados. Presenta diapositivas con cronómetro y teleprompter. |
+| [Fantasma](docs/modos/fantasma.md) | Escritorio oscuro, dock ocultable y avisos silenciados. Revisa la privacidad de la conexión y limpia metadatos de fotos. |
 
-[![CI](https://github.com/d33alba/ultron/actions/workflows/ci.yml/badge.svg)](https://github.com/d33alba/ultron/actions/workflows/ci.yml)
-![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)
-![Licencia MIT](https://img.shields.io/badge/Licencia-MIT-green)
-![Ubuntu 24.04+](https://img.shields.io/badge/Ubuntu-24.04%2B-orange)
+### Capturas de una sesión real en Ubuntu
 
-## ¿Qué es?
+| Elegir modo | Centro de mando |
+|---|---|
+| ![Holograma del fondo en el selector](docs/media/vm/nexus-elegir-modo.jpg) | ![Tarjetas y telemetría de NEXUS](docs/media/vm/nexus-centro-de-mando.jpg) |
+| **Escritorio Netanyahu** | **Ojo de Dios con vuelos** |
+| ![Escritorio tras activar Netanyahu](docs/media/vm/escritorio-netanyahu.jpg) | ![Vuelos en el visor](docs/media/vm/ojo-de-dios-vuelos.jpg) |
+| **Ojo de Dios con satélites** | **Ubuntu restaurado** |
+| ![Satélites en el visor](docs/media/vm/ojo-de-dios-satelites.jpg) | ![Escritorio después de salir del modo](docs/media/vm/ubuntu-restaurado.jpg) |
 
-Ultron transforma Ubuntu con GNOME en cinco escritorios especializados.
-Cada modo cambia la terminal, combina capas visuales y aporta sus propias herramientas.
-Puedes conectar una IA local, probar los ejemplos y restaurar el escritorio desde la misma CLI.
-
-| Glifo | Modo | Estética | Funciones estrella |
-|---|---|---|---|
-| ✡ | [Netanyahu](docs/modos/netanyahu.md) | Azul y blanco, centro de operaciones | `ultron radar --demo`, `ultron osint ip 8.8.8.8 --demo` |
-| ◑ | [Focus](docs/modos/focus.md) | Papel, tinta y verde salvia | `ultron repasar --demo`, `ultron stats --demo` |
-| ⚡ | [Gaming](docs/modos/gaming.md) | Neón y visualización de rendimiento | `ultron juegos --demo`, `ultron hud --demo --una-vez` |
-| ▶ | [Presentación](docs/modos/presentacion.md) | Alto contraste y tipografía grande | `ultron diapos --demo`, `ultron cronometro --demo` |
-| ◇ | [Fantasma](docs/modos/fantasma.md) | Oscuro y discreto | `ultron mac --demo`, `ultron dns-seguro --demo` |
-
-![Selector de modos en la terminal](docs/media/modos.svg)
-![Vista animada de los cinco fondos](docs/media/fondos.gif)
-
-Capturas reproducibles en `docs/media/`: [radar.svg](docs/media/radar.svg),
-[osint-ip.svg](docs/media/osint-ip.svg), [stats.svg](docs/media/stats.svg),
-[repasar.svg](docs/media/repasar.svg), [hud.svg](docs/media/hud.svg),
-[diapos.svg](docs/media/diapos.svg) y [mac.svg](docs/media/mac.svg). También se generan
-`banner-<modo>.svg` y `fondos/<modo>.png` con `python scripts/capturas.py`.
-
-## Instalación en tres comandos
+## Instalación
 
 ```bash
 git clone https://github.com/d33alba/ultron.git
@@ -46,9 +28,7 @@ cd ultron
 bash install.sh
 ```
 
-El instalador pide permiso para usar sudo, deja elegir modos y abre el asistente de IA.
-Cierra sesión y vuelve a entrar una vez para que GNOME cargue las extensiones. Abre el
-selector con `ultron` o **Super+U**.
+El instalador usa sudo para los paquetes de Ubuntu, permite elegir modos y abre el asistente de IA. Para instalar todos los modos y configurar la IA después, usa `bash install.sh --si`. Cierra sesión y vuelve a entrar para cargar las extensiones de GNOME.
 
 ## Conectar tu IA (un solo paso)
 
@@ -88,44 +68,51 @@ Si las extensiones aún no aparecen, vuelve a iniciar sesión en GNOME. Ejecuta
 `ultron doctor --completo` para ver los requisitos pendientes y su solución.
 El [manual de IA](docs/ia.md) recoge los errores y la configuración detallada.
 
-## Primeros pasos
+## Cómo evaluarlo en 5 minutos
 
-```bash
-ultron demo
-ultron modos --detalle focus
-ultron entrar focus --simular
-ultron entrar focus
-ultron estado
-```
+Con Ultron instalado y la sesión GNOME reiniciada, este recorrido funciona sin IA ni descargas adicionales.
 
-`ultron demo --rapida` enseña un ejemplo por modo en menos de tres minutos y funciona
-sin conexión ni IA. `ultron ia probar` verifica la conexión por separado.
+1. Pulsa **Super+U**. Si ya hay un modo activo, pulsa **Tab** en el centro de mando para volver al selector. Recorre los modos con las flechas y observa cómo cambia el holograma del fondo.
+2. Selecciona **Netanyahu** y pulsa **Intro**. Tras el rótulo a pantalla completa, consulta la CPU y la RAM en el centro de mando. Escribe **arsenal** en la barra y abre **Arsenal OSINT** para ver las fuentes disponibles. Pulsa **Intro** al terminar para volver.
+3. Minimiza la terminal. Comprueba el dock inferior, los iconos del escritorio y el menú **◆** del panel. Abre el menú para ver las funciones del modo.
+4. Vuelve a NEXUS, pulsa **Tab**, selecciona **Focus** y pulsa **Intro**. Compara su barra y su dock con los de Netanyahu. Escribe **resume mis apuntes** y abre la tarjeta de resumen para ver el formulario de archivo. **Esc** lo cierra.
+5. Desde el centro de mando pulsa **Ctrl+R** para restaurar Ubuntu. Comprueba el fondo y los favoritos anteriores. También puedes restaurarlos con `ultron salir`, incluso después de un cambio interrumpido.
 
-## Deshacer todo
+## Usar las funciones desde GNOME
 
-Ejecuta `ultron salir` para restaurar las capas a partir de la instantánea. Incluso si
-se interrumpió el cambio de modo, puedes ejecutar la misma orden. Para quitar también el
-programa instalado por pipx, ejecuta `bash uninstall.sh` desde el repositorio.
+El arranque animado de NEXUS da paso al selector o al centro de mando del modo activo. La barra en lenguaje natural busca herramientas del catálogo. Las tarjetas piden los datos necesarios, como una ruta, una dirección o una pregunta.
 
-## Arquitectura
+También puedes abrir funciones desde el escritorio, el dock o el menú de aplicaciones. Para trabajar con un documento, arrástralo al icono de una función compatible o selecciónalo en **Archivos → clic derecho → Scripts → Ultron**. Los fondos de escritorio y de bloqueo generados con GPT Images están en la carpeta `tema/` de cada modo.
 
-```mermaid
-flowchart LR
-    CLI[CLI Typer] --> Motor[Motor de modos]
-    Motor --> Capas[Capas reversibles]
-    Capas --> GNOME[GNOME]
-    Motor --> Estado[Instantánea XDG]
-    CLI --> IA[IA modular]
-    IA --> Local[API compatible con OpenAI]
-    IA --> Anthropic[API Anthropic]
-```
+## Comandos útiles
 
-## Seguridad y ética
+Todo se puede hacer desde NEXUS sin comandos, pero estos atajos van directos:
 
-Utiliza OSINT con información pública y limita las comprobaciones de seguridad a
-equipos y redes propios o con permiso. Las capas capturan los valores originales antes
-de modificarlos. Ultron avisa antes de pedir sudo y admite `ultron entrar focus --sin-sudo`.
-Los comandos generados por IA requieren confirmación. Ultron carece de telemetría.
+| Para | Comando |
+|---|---|
+| Abrir el centro de mando | `ultron` |
+| Ver los modos | `ultron modos` |
+| Entrar en un modo | `ultron entrar netanyahu` |
+| Volver a Ubuntu tal como estaba | `ultron salir` |
+| Que Ultron se presente solo (3 min) | `ultron exhibicion` |
+| La voz de ULTRON | `ultron voz probar` |
+| Silenciar la voz | `ultron voz off` |
+| Ojo de Dios con vuelos y satélites | `ultron ojo abrir` |
+| Investigar un dominio o una IP | `ultron osint operacion ubuntu.com --mapa` |
+| ¿Es fiable un enlace? | `ultron osint url http://ejemplo.xyz/login` |
+| Fuentes OSINT conectadas | `ultron osint fuentes` |
+| Revisar la seguridad del equipo | `ultron auditar` |
+| Resumir unos apuntes | **ultron resumen** seguido del PDF o los apuntes |
+| Crear flashcards | **ultron flashcards crear** seguido del documento |
+| Ordenar Descargas con IA | `ultron ordenar` |
+| Preguntar a la IA | `ultron ia preguntar "¿Qué es un pomodoro?"` |
+| Comprobar la conexión con la IA | `ultron ia probar` |
+| Música de un modo | `ultron musica importar cancion.mp3 --modo netanyahu` |
+| Diagnóstico completo | `ultron doctor --completo` |
 
-El código se distribuye bajo [licencia MIT](LICENSE). Consulta los [créditos y licencias
-de terceros](docs/creditos.md) para God's Eye View, Yaru y las extensiones de GNOME.
+## Manuales y ejemplos
+
+- [Configuración de IA](docs/ia.md), [arquitectura](docs/arquitectura.md) y [pruebas de desarrollo](docs/desarrollo.md).
+- Ejemplos de salida en terminal de [Radar](docs/media/radar.svg), [repaso](docs/media/repasar.svg), [HUD](docs/media/hud.svg) y [diapositivas](docs/media/diapos.svg).
+- Para desinstalar el programa después de restaurar Ubuntu, ejecuta `bash uninstall.sh` desde el repositorio.
+- [Licencia MIT](LICENSE) y [créditos de terceros](docs/creditos.md).

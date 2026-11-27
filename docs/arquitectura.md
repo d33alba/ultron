@@ -4,6 +4,12 @@ Typer registra los comandos y Rich representa la salida con el tema de la sesió
 registro descubre las definiciones YAML integradas y las instaladas por el usuario.
 La API de IA se parametriza independientemente del motor mediante los adaptadores HTTP.
 
+## NEXUS y el escritorio
+
+NEXUS usa Textual. El catálogo describe cada función, sus campos y el comando que la ejecuta. Las tarjetas y la barra de búsqueda usan ese catálogo para abrir el mismo formulario. Al enviar los datos, NEXUS lanza el comando en la terminal y permite regresar al centro de mando con Intro.
+
+La capa de lanzadores usa el catálogo para crear entradas de aplicaciones, colocar accesos destacados en el escritorio y fijar NEXUS y hasta cuatro funciones en el dock. Las funciones que aceptan archivos también aparecen en los scripts de Archivos. Al salir del modo, la capa restaura los favoritos previos.
+
 ## Capas e instantáneas
 
 Cada capa declara su disponibilidad y su orden. El motor captura su estado antes de
@@ -12,7 +18,7 @@ interrupción, `ultron salir` lee la instantánea y recorre las capas en orden i
 `Ejecutor` centraliza los comandos externos y la simulación evita las escrituras.
 
 La extensión `ultron@ultron` lee el estado del panel y muestra el selector de modos,
-el botón de silencio y los indicadores de sesión. La extensión usa módulos ES de GNOME.
+el botón de silencio y los indicadores de sesión. El menú ◆ incluye las funciones del modo activo. Al cambiar de modo, la extensión presenta su nombre en un rótulo a pantalla completa. La extensión usa módulos ES de GNOME.
 Instálala con `ultron instalar` y vuelve a iniciar sesión para cargarla.
 
 ## Crear un modo

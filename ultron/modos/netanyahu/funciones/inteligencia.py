@@ -287,6 +287,8 @@ def registrar(app: typer.Typer) -> None:  # noqa: C901 (registro de todos los co
             mostrar("OPERACIÓN", datos, True)
             return
         _resumen(objetivo, puntuacion, hallazgos, recs)
+        _decir(f"Operación sobre {objetivo.replace('.', ' punto ')} completada. Nivel de "
+               f"exposición: {puntuacion} sobre cien. {len(hallazgos)} hallazgos.")
         if carpeta:
             html = dossier.generar(carpeta / "dossier.html", titulo="DOSSIER DE OPERACIÓN",
                                    objetivo=objetivo, tipo=tipo.upper(), puntuacion=puntuacion,
@@ -358,6 +360,9 @@ def registrar(app: typer.Typer) -> None:  # noqa: C901 (registro de todos los co
         if destino:
             cuerpo.append(f"\nDestino real: {destino}", style="apagado")
         t.consola.print(t.panel(cuerpo, titulo="VEREDICTO DEL ENLACE", border_style=estilo))
+        _decir({"PELIGROSO": "Alerta. Enlace peligroso. No lo abras.",
+                "SOSPECHOSO": "Precaución. El enlace tiene señales sospechosas."}.get(
+                    veredicto, "El enlace no muestra señales de riesgo."))
 
     @app.command("imagen")
     def imagen(ctx: typer.Context,
@@ -549,3 +554,9 @@ def _resumen(objetivo: str, puntuacion: int, hallazgos: list[tuple[str, str]],
 
 def ruta_operaciones() -> Path:
     return rutas.datos() / "operaciones"
+
+
+def _decir(texto: str) -> None:
+    from ultron.nucleo import voz
+
+    voz.hablar(texto, "netanyahu")

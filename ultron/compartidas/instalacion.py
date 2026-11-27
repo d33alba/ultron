@@ -57,6 +57,34 @@ def descargar_extension(uuid: str, version_shell: str, destino: Path,
     return archivo
 
 
+def _instalar_voz(t: tema.Tema) -> None:
+    """Voz neuronal de ULTRON (Piper). Si falla, queda espeak-ng: nunca para la instalación."""
+    from ultron.nucleo import voz
+
+    try:
+        with t.spinner_ctx("Descargando la voz de ULTRON (Piper, unos 80 MB)"):
+            voz.instalar()
+        t.ok("Voz de ULTRON lista")
+    except Exception as e:  # noqa: BLE001
+        t.aviso(f"No se pudo descargar la voz neuronal ({type(e).__name__}); "
+                "se usará espeak-ng. Reintenta con: ultron voz instalar")
+
+
+def _instalar_ojo(t: tema.Tema, ej: Ejecutor) -> None:
+    """Deja el Ojo de Dios listo (Node 24 portátil + God's Eye View). Nunca es fatal."""
+    from ultron.modos.netanyahu.funciones import ojo
+
+    if (ojo.carpeta().parent / "instalado").is_file():
+        t.ok("Ojo de Dios ya instalado")
+        return
+    try:
+        ojo.preparar(ej, ojo.carpeta(), si=True)
+        t.ok("Ojo de Dios listo")
+    except (Exception, SystemExit) as e:  # noqa: BLE001
+        t.aviso(f"El Ojo de Dios no se pudo preparar ahora ({type(e).__name__}); se "
+                "instalará solo la primera vez que lo abras (ultron ojo).")
+
+
 @app.command("instalar")
 def cmd_instalar(
     modo: list[str] = typer.Option(None, "--modo", "-m", help="Solo lo de estos modos."),
@@ -102,12 +130,10 @@ def cmd_instalar(
 
     if atajo.instalar(ej):
         t.ok("Atajo Super+U para abrir Ultron")
+    if not simular:
+        _instalar_voz(t)
     if not simular and (not modo or "netanyahu" in modo):
-        from ultron.modos.netanyahu.funciones.ojo import version_valida
-
-        if not ej.existe("node") or not version_valida(ej.leer(["node", "--version"]).salida):
-            t.aviso("Ojo de Dios requiere Node 24.14+ de la rama 24 o Node 26. "
-                    "Ejecuta ultron ojo instalar para comprobar las opciones de instalación.")
+        _instalar_ojo(t, ej)
 
     c.print(t.panel(
         "[bold]Cierra sesión y vuelve a entrar una vez[/] para que GNOME cargue las "

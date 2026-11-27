@@ -40,6 +40,23 @@ def version_valida(salida: str) -> bool:
     return mayor == 26 or (mayor == 24 and (menor, parche) >= (14, 0))
 
 
+CAPAS = {"vuelos": "f", "satelites": "s", "satélites": "s"}
+CAPAS_DEFECTO = "vuelos,satelites"
+
+
+def url_vista(lat: float = 40.4, lon: float = -3.7, alt: float = 20_000_000,
+              capas: str = CAPAS_DEFECTO) -> str:
+    """Enlace que abre el globo ya situado y con capas (formato de enlace v2 del proyecto)."""
+    from urllib.parse import urlencode
+
+    fichas = [CAPAS[c.strip().lower()] for c in capas.split(",") if c.strip().lower() in CAPAS]
+    vista = {"v": 2, "lat": f"{lat:.4f}", "lon": f"{lon:.4f}", "alt": int(alt), "heading": 0,
+             "pitch": -90, "roll": 0}
+    if fichas:
+        vista["l"] = ".".join(dict.fromkeys(fichas))
+    return f"{URL}/?welcome=0#{urlencode(vista)}"
+
+
 NODE_DIST = "https://nodejs.org/dist/latest-v24.x/"
 
 
@@ -232,21 +249,23 @@ def _abrir(ctx: typer.Context, kiosko: bool, url: str = URL, si: bool = False) -
 
 
 SI = typer.Option(False, "--si", help="Sin preguntas (instala lo que falte).")
+CAPAS_OPC = typer.Option(CAPAS_DEFECTO, "--capas",
+                         help="Capas al abrir: vuelos, satelites (separadas por comas) o ninguna.")
 
 
 @app.callback(invoke_without_command=True)
 def entrada(ctx: typer.Context, kiosko: bool = typer.Option(False, "--kiosko"),
-            si: bool = SI) -> None:
-    """Abre el globo 3D local."""
+            si: bool = SI, capas: str = CAPAS_OPC) -> None:
+    """Abre el globo 3D local con vuelos y satélites en directo."""
     if ctx.invoked_subcommand is None:
-        _abrir(ctx, kiosko, si=si)
+        _abrir(ctx, kiosko, url_vista(capas=capas), si=si)
 
 
 @app.command("abrir")
 def abrir(ctx: typer.Context, kiosko: bool = typer.Option(False, "--kiosko"),
-          si: bool = SI) -> None:
-    """Inicia el servidor y abre su interfaz en el navegador (lo instala si hace falta)."""
-    _abrir(ctx, kiosko, si=si)
+          si: bool = SI, capas: str = CAPAS_OPC) -> None:
+    """Abre el globo con vuelos y satélites en directo (lo instala si hace falta)."""
+    _abrir(ctx, kiosko, url_vista(capas=capas), si=si)
 
 
 @app.command("instalar")
@@ -292,9 +311,7 @@ def actualizar(ctx: typer.Context) -> None:
 
 @app.command("objetivo")
 def objetivo(ctx: typer.Context, lugar: str) -> None:
-    """Abre la vista con las coordenadas indicadas cuando el proyecto admite el enlace."""
-    from urllib.parse import urlencode
-
+    """Vuela con el globo hasta un lugar o coordenadas, con vuelos y satélites."""
     try:
         lat, lon = map(float, lugar.split(","))
     except ValueError:
@@ -312,11 +329,4 @@ def objetivo(ctx: typer.Context, lugar: str) -> None:
             fallo("No se encontró el lugar. Introduce latitud y longitud separadas por coma.", 2)
     if not (-90 <= lat <= 90 and -180 <= lon <= 180):
         fallo("Coordenadas fuera de rango.", 2)
-    url = URL
-    formato = carpeta() / "src" / "view" / "index.js"
-    if formato.is_file() and "viewToParams" in formato.read_text(encoding="utf-8"):
-        url += "/#" + urlencode({"v": 2, "lat": f"{lat:.4f}", "lon": f"{lon:.4f}",
-                                  "alt": 80000, "pitch": -90, "heading": 0, "roll": 0})
-    else:
-        interfaz().aviso("La instalación no reconoce el formato de enlace de coordenadas.")
-    _abrir(ctx, False, url)
+    _abrir(ctx, False, url_vista(lat, lon, 80000))

@@ -13,6 +13,7 @@ APT_COMUNES = [
     "mpv", "conky-all", "gnome-shell-extensions", "gnome-shell-extension-manager",
     "gnome-tweaks", "dconf-cli", "python3-gi", "gir1.2-gtk-4.0", "fonts-jetbrains-mono",
     "plymouth-themes", "yt-dlp", "ffmpeg", "chafa", "jq", "curl", "libgtk-3-bin",
+    "espeak-ng", "pulseaudio-utils",
 ]
 
 EXTENSIONES_COMUNES = ["user-theme@gnome-shell-extensions.gcampax.github.com"]

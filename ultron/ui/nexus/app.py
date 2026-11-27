@@ -167,6 +167,9 @@ class Arranque(Screen):
     def on_mount(self) -> None:
         self.styles.background = self.p["fondo"]
         self.set_interval(1 / 24, self.pintar)
+        from ultron.nucleo import voz
+
+        voz.hablar("Ultron en línea. Todos los sistemas operativos.")
 
     def pintar(self) -> None:
         t = time.monotonic() - self.t0
