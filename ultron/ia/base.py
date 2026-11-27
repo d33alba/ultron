@@ -114,7 +114,11 @@ class ClienteHTTP:
         self.aj = aj
         self.proveedor = aj.proveedor
         self.modelo = aj.modelo
-        self._http = httpx.Client(timeout=aj.timeout, transport=transport)
+        espera = aj.timeout
+        if es_url_local(aj.url_base) and espera < 300:
+            espera = 300.0  # un modelo local en CPU puede tardar en dar la primera palabra
+        self._http = httpx.Client(timeout=httpx.Timeout(espera, connect=10.0),
+                                  transport=transport)
 
     def _cabeceras(self) -> dict[str, str]:
         return {}
@@ -145,3 +149,10 @@ class ClienteHTTP:
             return Diagnostico(False, err.mensaje, error=err)
         ms = int((time.monotonic() - inicio) * 1000)
         return Diagnostico(True, f"{self.modelo} responde en {ms} ms", ms, texto.strip()[:80])
+
+
+def es_url_local(url: str) -> bool:
+    from urllib.parse import urlparse
+
+    host = (urlparse(url).hostname or "").lower()
+    return host in {"localhost", "127.0.0.1", "0.0.0.0", "::1"} or host.endswith(".local")

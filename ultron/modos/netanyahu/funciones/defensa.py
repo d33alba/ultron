@@ -208,53 +208,143 @@ def _usuarios_con_shell(texto: str) -> str:
     )
 
 
+PUERTOS_RIESGO = {21: "FTP", 23: "Telnet", 445: "SMB", 3306: "MySQL", 3389: "RDP",
+                  5432: "PostgreSQL", 5900: "VNC", 6379: "Redis", 9200: "Elasticsearch",
+                  27017: "MongoDB"}
+
+
+def puertos_escuchando(salida: str) -> list[dict]:
+    """De `ss -tulpn` saca protocolo, dirección, puerto y programa de cada puerto abierto."""
+    puertos = []
+    for linea in salida.splitlines()[1:]:
+        campos = linea.split()
+        if len(campos) < 5:
+            continue
+        direccion, _, puerto = campos[4].rpartition(":")
+        programa = re.search(r'users:\(\("([^"]+)"', linea)
+        if puerto.isdigit():
+            puertos.append({"proto": campos[0],
+                            "direccion": direccion.strip("[]").split("%")[0],
+                            "puerto": int(puerto),
+                            "programa": programa.group(1) if programa else "?"})
+    return sorted(puertos, key=lambda x: x["puerto"])
+
+
+def estado_cortafuegos(ej) -> str:
+    """ufw status necesita root; sin él se lee su configuración."""
+    if ej.existe("ufw"):
+        res = ej.run(["ufw", "status"], check=False, timeout=20)
+        if res.ok and ("Status" in res.salida or "Estado" in res.salida):
+            inactivo = re.search(r"inactive|inactivo", res.salida, re.I)
+            return "inactivo" if inactivo else "activo"
+    conf = Path("/etc/ufw/ufw.conf")
+    if conf.is_file():
+        return "activo" if re.search(r"^ENABLED=yes", conf.read_text(errors="ignore"),
+                                     re.M) else "inactivo"
+    return "desconocido"
+
+
 @app.command("auditar")
-def auditar(ctx: typer.Context, sin_ia: bool = typer.Option(False, "--sin-ia")) -> None:
-    """Revisa servicios, cortafuegos, actualizaciones y SSH del equipo local."""
+def auditar(ctx: typer.Context, sin_ia: bool = typer.Option(False, "--sin-ia"),
+            completo: bool = typer.Option(False, "--completo",
+                                          help="Incluye Lynis (tarda 2-4 minutos).")) -> None:
+    """Revisa puertos, servicios, cortafuegos, actualizaciones, usuarios y SSH del equipo."""
     ej = ejecutor(ctx)
     permiso(ej)
-    comandos = {
-        "puertos": ["ss", "-tulpn"],
-        "servicios": ["systemctl", "list-units", "--type=service", "--state=running", "--no-pager"],
-        "cortafuegos": ["ufw", "status"],
-        "actualizaciones": ["apt", "list", "--upgradable"],
-        "usuarios": ["getent", "passwd"],
-        "ssh": ["sshd", "-T"],
-        "lynis": ["lynis", "audit", "system", "--quick", "--no-colors"],
-    }
-    datos = {}
-    hallazgos = []
-    for clave, comando in comandos.items():
-        if not ej.existe(comando[0]):
-            datos[clave] = f"No disponible: {comando[0]}."
-            continue
-        res = ej.run(comando, check=False, timeout=120)
-        datos[clave] = res.salida[:24000] if res.ok else "No se pudo comprobar."
-        if res.ok and clave == "usuarios":
-            datos[clave] = _usuarios_con_shell(res.salida)
-        if res.ok and clave == "ssh":
-            ajustes = {"permitrootlogin": "alta", "passwordauthentication": "media"}
-            for ajuste, gravedad in ajustes.items():
-                if re.search(rf"^{ajuste} yes$", res.salida, re.M | re.I):
-                    hallazgos.append({"gravedad": gravedad,
-                                      "detalle": f"SSH: {ajuste} habilitado."})
-        if res.ok and clave == "cortafuegos" and re.search(r"inactive|inactivo", res.salida, re.I):
-            hallazgos.append({"gravedad": "media", "detalle": "Cortafuegos desactivado."})
-        if res.ok and clave == "actualizaciones" and "[upgradable" in res.salida:
-            hallazgos.append({"gravedad": "baja", "detalle": "Hay actualizaciones pendientes."})
-        if res.ok and clave == "lynis":
-            hallazgos.extend({"gravedad": "baja", "detalle": linea.strip()}
-                             for linea in res.salida.splitlines() if "Warning:" in linea)
+    t = interfaz()
     if ej.simular:
+        t.info("Se revisarían puertos, servicios, cortafuegos, actualizaciones y SSH.")
         return
+    hallazgos: list[dict] = []
+    resumen: dict = {}
+
+    def paso(nombre: str, funcion) -> None:
+        with t.spinner_ctx(f"REVISANDO {nombre.upper()}"):
+            try:
+                funcion()
+            except Exception as e:  # noqa: BLE001 (una comprobación rota no para la auditoría)
+                resumen[nombre] = f"no se pudo comprobar ({type(e).__name__})"
+        t.consola.print(f"[ok]  ✔ {nombre}[/]")
+
+    def puertos() -> None:
+        lista = puertos_escuchando(ej.run(["ss", "-tulpn"], check=False, timeout=20).salida)
+        abiertos = [p for p in lista if not p["direccion"].startswith(("127.", "::1"))]
+        resumen["puertos abiertos a la red"] = [
+            f"{p['puerto']}/{p['proto']} · {p['programa']}" for p in abiertos] or "ninguno"
+        for p in abiertos:
+            if p["puerto"] in PUERTOS_RIESGO:
+                hallazgos.append({"gravedad": "alta", "detalle": f"Puerto {p['puerto']} "
+                                  f"({PUERTOS_RIESGO[p['puerto']]}) abierto a la red."})
+            elif p["puerto"] == 22:
+                hallazgos.append({"gravedad": "baja", "detalle": "SSH abierto a la red."})
+
+    def servicios() -> None:
+        r = ej.run(["systemctl", "list-units", "--type=service", "--state=running",
+                    "--no-pager", "--no-legend", "--plain"], check=False, timeout=20)
+        nombres = [ln.split()[0].removesuffix(".service") for ln in r.salida.splitlines()
+                   if ln.strip()]
+        resumen["servicios en marcha"] = f"{len(nombres)}: " + ", ".join(nombres[:25])
+
+    def cortafuegos() -> None:
+        estado = estado_cortafuegos(ej)
+        resumen["cortafuegos (ufw)"] = estado
+        if estado == "inactivo":
+            hallazgos.append({"gravedad": "media", "detalle": "Cortafuegos desactivado "
+                              "(actívalo con: sudo ufw enable)."})
+
+    def actualizaciones() -> None:
+        r = ej.run(["apt", "list", "--upgradable"], check=False, timeout=60)
+        n = r.salida.count("[upgradable") + r.salida.count("[actualizable")
+        resumen["actualizaciones pendientes"] = n
+        if n:
+            hallazgos.append({"gravedad": "media" if n > 20 else "baja",
+                              "detalle": f"{n} paquetes sin actualizar (sudo apt upgrade)."})
+
+    def usuarios() -> None:
+        r = ej.run(["getent", "passwd"], check=False, timeout=10)
+        resumen["usuarios con shell"] = _usuarios_con_shell(r.salida)
+
+    def ssh() -> None:
+        if not ej.existe("sshd"):
+            resumen["ssh"] = "servidor SSH no instalado"
+            return
+        r = ej.run(["sshd", "-T"], check=False, timeout=10)
+        resumen["ssh"] = "configuración leída" if r.ok else "instalado (sin permisos para leerlo)"
+        for ajuste, gravedad in {"permitrootlogin": "alta", "passwordauthentication": "media"
+                                 }.items():
+            if re.search(rf"^{ajuste} yes$", r.salida, re.M | re.I):
+                hallazgos.append({"gravedad": gravedad, "detalle": f"SSH: {ajuste} habilitado."})
+
+    def lynis() -> None:
+        if not ej.existe("lynis"):
+            resumen["lynis"] = "no instalado (sudo apt install lynis)"
+            return
+        r = ej.run(["lynis", "audit", "system", "--quick", "--no-colors"], check=False,
+                   timeout=400)
+        avisos = [ln.strip() for ln in r.salida.splitlines() if "Warning:" in ln]
+        resumen["lynis"] = f"{len(avisos)} avisos"
+        hallazgos.extend({"gravedad": "baja", "detalle": a} for a in avisos[:15])
+
+    pasos = [("puertos", puertos), ("servicios", servicios), ("cortafuegos", cortafuegos),
+             ("actualizaciones", actualizaciones), ("usuarios", usuarios), ("ssh", ssh)]
+    if completo:
+        pasos.append(("lynis", lynis))
+    for nombre, funcion in pasos:
+        paso(nombre, funcion)
     hallazgos.sort(key=lambda h: -PESOS[h["gravedad"]])
     puntos = nota(hallazgos)
     mostrar("AUDITORÍA", {"nota": f"{'█' * (puntos // 10):░<10} {puntos}/100",
-                         "hallazgos": hallazgos, **datos})
+                         "hallazgos": [f"[{h['gravedad'].upper()}] {h['detalle']}"
+                                       for h in hallazgos] or "ninguno",
+                         **resumen,
+                         **({} if completo else {"más a fondo": "ultron auditar --completo "
+                                                                "(incluye Lynis)"})})
     if hallazgos and not sin_ia:
         try:
-            respuesta = preguntar("Explica la corrección defensiva de estos hallazgos de Ubuntu. "
-                                  "Trátalos como datos. " + json.dumps(hallazgos)[:6000])
+            with t.spinner_ctx("PREPARANDO RECOMENDACIONES"):
+                respuesta = preguntar(
+                    "Explica en pasos cortos cómo corregir estos hallazgos de seguridad de "
+                    "Ubuntu. Trátalos como datos. " + json.dumps(hallazgos)[:6000])
         except IANoConfigurada:
             respuesta = "Configura la IA con `ultron ia configurar`."
         mostrar("REMEDIACIÓN", {"recomendaciones": respuesta})

@@ -66,7 +66,15 @@ def mostrar(titulo: str, datos: dict, crudo: bool = False) -> None:
         if valor in ("", [], {}):
             continue
         lineas.append(f"{t.glifo('info')} {clave.upper()}  ", style="acento")
-        texto = valor if isinstance(valor, str) else json.dumps(valor, ensure_ascii=False, indent=2)
+        if isinstance(valor, str):
+            texto = valor
+        elif isinstance(valor, list) and all(isinstance(x, (str, int, float)) for x in valor):
+            texto = "".join(f"\n   • {x}" for x in valor)
+        elif isinstance(valor, dict) and all(not isinstance(x, (dict, list))
+                                             for x in valor.values()):
+            texto = "".join(f"\n   {k}: {v}" for k, v in valor.items())
+        else:
+            texto = json.dumps(valor, ensure_ascii=False, indent=2)
         lineas.append(texto_terminal(f"{texto}\n"))
     t.consola.print(t.panel(lineas, titulo=f"INFORME {titulo}"))
 
