@@ -63,6 +63,8 @@ def mostrar(titulo: str, datos: dict, crudo: bool = False) -> None:
         return
     lineas = Text()
     for clave, valor in datos.items():
+        if valor in ("", [], {}):
+            continue
         lineas.append(f"{t.glifo('info')} {clave.upper()}  ", style="acento")
         texto = valor if isinstance(valor, str) else json.dumps(valor, ensure_ascii=False, indent=2)
         lineas.append(texto_terminal(f"{texto}\n"))

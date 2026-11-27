@@ -25,6 +25,7 @@ capas:
     cursor: ibeam
   escritorio:
     fondo: tema/fondo.png
+    fondo_bloqueo: tema/bloqueo.png
     esquema: oscuro
     acento: slate
     animaciones: false
@@ -35,6 +36,7 @@ capas:
            transparency-mode: FIXED, background-opacity: 0.0, custom-background-color: true,
            background-color: "#1E1F22"}
   iconos:
+    personalizados: tema/iconos
     monocromo: true
     tinte: {objetivo: "#8FBC8F"}
   cursor: {tamano: 24}

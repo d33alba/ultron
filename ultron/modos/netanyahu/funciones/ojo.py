@@ -40,32 +40,97 @@ def version_valida(salida: str) -> bool:
     return mayor == 26 or (mayor == 24 and (menor, parche) >= (14, 0))
 
 
-def comprobar_node(ej: Ejecutor) -> None:
+NODE_DIST = "https://nodejs.org/dist/latest-v24.x/"
+
+
+def dir_node() -> Path:
+    return rutas.datos() / "node"
+
+
+def _usar_node_portatil() -> bool:
+    """Pone el Node portátil de Ultron delante en el PATH (lo heredan npm y vite)."""
+    binario = dir_node() / "bin"
+    if not (binario / "node").is_file():
+        return False
+    if str(binario) not in os.environ.get("PATH", "").split(os.pathsep):
+        os.environ["PATH"] = f"{binario}{os.pathsep}{os.environ.get('PATH', '')}"
+    return True
+
+
+def descargar_node(ej: Ejecutor) -> None:
+    """Descarga el Node 24 oficial de nodejs.org, comprueba su SHA-256 y lo descomprime en
+    ~/.local/share/ultron/node. No toca el Node del sistema ni pide sudo."""
+    import hashlib
+    import platform
+    import tarfile
+    import tempfile
+
+    arq = {"x86_64": "x64", "amd64": "x64", "aarch64": "arm64", "arm64": "arm64"}.get(
+        platform.machine().lower())
+    if arq is None:
+        fallo(f"No hay Node portátil para {platform.machine()}.", 2)
+    with httpx.Client(timeout=60, follow_redirects=True) as cliente:
+        sumas = cliente.get(NODE_DIST + "SHASUMS256.txt")
+        sumas.raise_for_status()
+        linea = next((x for x in sumas.text.splitlines()
+                      if x.endswith(f"-linux-{arq}.tar.xz")), None)
+        if linea is None:
+            fallo("No encuentro Node 24 en nodejs.org.", 2)
+        huella, nombre = linea.split()
+        with tempfile.TemporaryDirectory() as tmp:
+            archivo = Path(tmp) / nombre
+            h = hashlib.sha256()
+            with cliente.stream("GET", NODE_DIST + nombre) as r, archivo.open("wb") as f:
+                r.raise_for_status()
+                for trozo in r.iter_bytes(1 << 16):
+                    h.update(trozo)
+                    f.write(trozo)
+            if h.hexdigest() != huella:
+                fallo("La descarga de Node no coincide con su huella SHA-256. Cancelado.", 1)
+            with tarfile.open(archivo) as tar:
+                try:
+                    tar.extractall(tmp, filter="data")
+                except TypeError:  # Python < 3.11.4
+                    tar.extractall(tmp)  # noqa: S202 (archivo oficial con huella comprobada)
+            origen = Path(tmp) / nombre.removesuffix(".tar.xz")
+            if dir_node().exists():
+                import shutil
+
+                shutil.rmtree(dir_node())
+            dir_node().parent.mkdir(parents=True, exist_ok=True)
+            origen.rename(dir_node())
+
+
+def comprobar_node(ej: Ejecutor, si: bool = False) -> None:
     if ej.simular:
         ej.run(["node", "--version"])
         return
+    _usar_node_portatil()
     if ej.existe("node") and version_valida(ej.run(["node", "--version"]).salida):
         requerir(ej, "npm")
         return
-    shell = os.environ.get("SHELL", "")
-    nvm = rutas.home() / ".nvm" / "nvm.sh"
-    if Path(shell).name in {"bash", "zsh"} and nvm.is_file() and typer.confirm(
-        "¿Instalar Node 24 mediante el nvm del usuario?"
-    ):
-        ej.run([shell, "-c", '. "$1" && nvm install 24', "ultron", str(nvm)], timeout=300)
-    fallo("Activa Node 24.14 o posterior de la rama 24 con nvm use 24 y vuelve a intentarlo. "
-          "También puedes instalar Node 24 desde NodeSource.", 2)
+    t = interfaz()
+    t.info("El Ojo de Dios necesita Node 24 y este sistema tiene otra versión.")
+    if not si and not typer.confirm("¿Descargo Node 24 oficial (nodejs.org, unos 30 MB) solo "
+                                    "para Ultron, sin tocar el del sistema?", default=True):
+        fallo("Sin Node 24 no se puede abrir el Ojo de Dios.", 2)
+    with t.spinner_ctx("DESCARGANDO NODE 24"):
+        descargar_node(ej)
+    if not _usar_node_portatil() or not version_valida(ej.run(["node", "--version"]).salida):
+        fallo("No se pudo preparar Node 24.", 1)
+    t.ok("Node 24 listo.")
 
 
-def preparar(ej: Ejecutor, destino: Path) -> None:
-    comprobar_node(ej)
+def preparar(ej: Ejecutor, destino: Path, si: bool = False) -> None:
+    comprobar_node(ej, si)
     if not ej.simular:
         requerir(ej, "git")
         destino.parent.mkdir(parents=True, exist_ok=True)
-    if not (destino / ".git").exists():
-        ej.run(["git", "clone", "--depth", "1", REPO, str(destino)], timeout=180)
-    ej.run(["npm", "ci"], directorio=destino, timeout=600)
-    ej.run(["npm", "run", "doctor"], directorio=destino, timeout=180)
+    with (nullcontext() if ej.simular else interfaz().spinner_ctx("INSTALANDO GOD'S EYE VIEW")):
+        if not (destino / ".git").exists():
+            ej.run(["git", "clone", "--depth", "1", REPO, str(destino)], timeout=180)
+        ej.run(["npm", "ci"], directorio=destino, timeout=900)
+        ej.run(["npm", "run", "doctor"], directorio=destino, timeout=180)
     ej.escribir(destino.parent / "instalado", "ok\n")
 
 
@@ -117,7 +182,7 @@ def _detener(ej: Ejecutor, proc: psutil.Process) -> None:
     ej.borrar(archivo_estado())
 
 
-def _abrir(ctx: typer.Context, kiosko: bool, url: str = URL) -> None:
+def _abrir(ctx: typer.Context, kiosko: bool, url: str = URL, si: bool = False) -> None:
     ej = ejecutor(ctx)
     t = interfaz()
     destino = carpeta()
@@ -129,13 +194,14 @@ def _abrir(ctx: typer.Context, kiosko: bool, url: str = URL) -> None:
         return
     requerir(ej, navegador[0], "firefox" if kiosko else "xdg-utils")
     if not (destino.parent / "instalado").is_file():
-        if not typer.confirm("¿Instalar God's Eye View?"):
+        t.info("Primera vez: hay que instalar God's Eye View (unos minutos).")
+        if not si and not typer.confirm("¿Lo instalo ahora?", default=True):
             raise typer.Exit(2)
-        preparar(ej, destino)
+        preparar(ej, destino, si=True)
     if _proceso() is None:
         if _responde():
             fallo("El puerto 4173 ya está ocupado por otro servidor.")
-        comprobar_node(ej)
+        comprobar_node(ej, si=True)
         log.parent.mkdir(parents=True, exist_ok=True)
         resultado = lanzar(ej, destino, log)
         try:
@@ -165,24 +231,28 @@ def _abrir(ctx: typer.Context, kiosko: bool, url: str = URL) -> None:
     fallo(f"God's Eye View no respondió. Consulta {log}.")
 
 
+SI = typer.Option(False, "--si", help="Sin preguntas (instala lo que falte).")
+
+
 @app.callback(invoke_without_command=True)
-def entrada(ctx: typer.Context, kiosko: bool = typer.Option(False, "--kiosko")) -> None:
+def entrada(ctx: typer.Context, kiosko: bool = typer.Option(False, "--kiosko"),
+            si: bool = SI) -> None:
     """Abre el globo 3D local."""
     if ctx.invoked_subcommand is None:
-        _abrir(ctx, kiosko)
+        _abrir(ctx, kiosko, si=si)
 
 
 @app.command("abrir")
-def abrir(ctx: typer.Context, kiosko: bool = typer.Option(False, "--kiosko")) -> None:
-    """Inicia el servidor y abre su interfaz en el navegador."""
-    _abrir(ctx, kiosko)
+def abrir(ctx: typer.Context, kiosko: bool = typer.Option(False, "--kiosko"),
+          si: bool = SI) -> None:
+    """Inicia el servidor y abre su interfaz en el navegador (lo instala si hace falta)."""
+    _abrir(ctx, kiosko, si=si)
 
 
 @app.command("instalar")
-def instalar(ctx: typer.Context) -> None:
-    """Clona el proyecto y comprueba su instalación."""
-    with interfaz().spinner_ctx("INSTALANDO GOD'S EYE VIEW"):
-        preparar(ejecutor(ctx), carpeta())
+def instalar(ctx: typer.Context, si: bool = SI) -> None:
+    """Clona el proyecto, prepara Node 24 si hace falta y comprueba la instalación."""
+    preparar(ejecutor(ctx), carpeta(), si=si)
 
 
 @app.command("estado")

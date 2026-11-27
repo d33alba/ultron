@@ -21,6 +21,7 @@ from ultron.ui.nexus import catalogo
 from ultron.ui.tema import cargar_tema
 
 SHELL = "org.gnome.shell"
+DING = "ding@rastersoft.com"
 FUENTES_GLIFO = [
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
@@ -183,6 +184,10 @@ class CapaLanzadores(Capa):
             "ULTRON NEXUS", "Centro de mando de Ultron", iconos / "nexus.png",
             linea_exec(terminal("ULTRON NEXUS", True) + [uu, "nexus"]))
         self.ej.escribir(dir_aplicaciones() / "ultron-nexus.desktop", nexus, modo=0o755)
+        en_escritorio: list[str] = []
+        self._colocar: list[tuple[Path, int, int]] = []
+        if cfg.get("escritorio", True):
+            self._al_escritorio("ultron-nexus.desktop", nexus, 0, cfg)
         destacadas = {f.id for f in self._destacadas(cfg)}
         favoritos = ["ultron-nexus.desktop"]
         for f in self._fichas() + catalogo.comunes():
@@ -195,29 +200,47 @@ class CapaLanzadores(Capa):
             nombre = f"ultron-{id_modo}-{f.id}.desktop"
             self.ej.escribir(dir_aplicaciones() / nombre, entrada, modo=0o755)
             if f.id in destacadas and cfg.get("escritorio", True):
-                destino = dir_escritorio(self.ej) / nombre
-                self.ej.escribir(destino, entrada, modo=0o755)
-                if self.ej.existe("gio"):
-                    self.ej.run(["gio", "set", str(destino), "metadata::trusted", "true"],
-                                check=False)
+                self._al_escritorio(nombre, entrada, len(en_escritorio) + 1, cfg)
+                en_escritorio.append(nombre)
             if f.id in destacadas and f.modo == id_modo and len(favoritos) < 5:
                 favoritos.append(nombre)
             if f.soltar and cfg.get("archivos", True):
                 guion = ("#!/bin/sh\n# Ultron: script de Archivos (se borra al salir del modo)\n"
                          f"exec {linea_exec(argv)} \"$@\"\n")
                 self.ej.escribir(dir_scripts() / f.titulo, guion, modo=0o755)
-        if cfg.get("escritorio", True):
-            destino = dir_escritorio(self.ej) / "ultron-nexus.desktop"
-            self.ej.escribir(destino, nexus, modo=0o755)
-            if self.ej.existe("gio"):
-                self.ej.run(["gio", "set", str(destino), "metadata::trusted", "true"], check=False)
         if cfg.get("dock", True):
             actuales = C.leer_lista(self.ej.gsettings_get(SHELL, "favorite-apps"))
             if self.ej.gsettings_get(SHELL, "favorite-apps") is not None:
                 resto = [a for a in actuales if not a.startswith("ultron-")]
                 self.ej.gsettings_set(SHELL, "favorite-apps", C.gv_lista(favoritos + resto))
+        self._recolocar()
         if self.ej.existe("update-desktop-database"):
             self.ej.run(["update-desktop-database", str(dir_aplicaciones())], check=False)
+
+    def _al_escritorio(self, nombre: str, contenido: str, fila: int, cfg: dict) -> None:
+        """Pone el lanzador en el escritorio y apunta su sitio en una columna propia (a la
+        izquierda, donde los fondos de Ultron dejan hueco)."""
+        destino = dir_escritorio(self.ej) / nombre
+        self.ej.escribir(destino, contenido, modo=0o755)
+        x, y0, paso = (int(cfg.get(k, d)) for k, d in (("x", 150), ("y", 70), ("paso", 118)))
+        por_columna = int(cfg.get("filas", 8))
+        x += (fila // por_columna) * 130
+        self._colocar.append((destino, x, y0 + (fila % por_columna) * paso))
+
+    def _recolocar(self) -> None:
+        """El escritorio de Ubuntu (DING) solo lee las posiciones al arrancar: se fijan
+        confianza y posición y se reinicia la extensión para que los coloque."""
+        if not self._colocar or not self.ej.existe("gio"):
+            return
+        for destino, x, y in self._colocar:
+            self.ej.run(["gio", "set", str(destino), "metadata::trusted", "true"], check=False)
+            self.ej.run(["gio", "set", str(destino), "metadata::nautilus-icon-position",
+                         f"{x},{y}"], check=False)
+        if self.ej.existe("gnome-extensions"):
+            activas = self.ej.gsettings_get(SHELL, "enabled-extensions") or ""
+            if DING in activas or self.ej.simular:
+                self.ej.run(["gnome-extensions", "disable", DING], check=False)
+                self.ej.run(["gnome-extensions", "enable", DING], check=False)
 
     def restaurar(self, previo: dict) -> None:
         C.restaurar_claves(self.ej, previo.get("claves", {}))

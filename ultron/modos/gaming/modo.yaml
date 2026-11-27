@@ -39,6 +39,7 @@ capas:
            background-color: "#0B0B16", dash-max-icon-size: 44, show-trash: false,
            show-mounts: false, running-indicator-style: DASHES}
   iconos:
+    personalizados: tema/iconos
     tinte:
       glow: 1.6
       objetivo: "#00F0FF"

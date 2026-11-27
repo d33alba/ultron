@@ -17,8 +17,12 @@ capas:
     texto: "#FFFFFF"
     fuente: "JetBrains Mono 16"
     transparencia: 0
+  iconos:
+    personalizados: tema/iconos
+    tinte: {objetivo: "#F2C14E", intensidad: 0.45}
   escritorio:
     fondo: tema/fondo.png
+    fondo_bloqueo: tema/bloqueo.png
     esquema: oscuro
     acento: yellow
     tema_gtk: generar

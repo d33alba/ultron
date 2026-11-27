@@ -22,12 +22,14 @@ capas:
     cursor: underline
   escritorio:
     fondo: tema/fondo.png
+    fondo_bloqueo: tema/bloqueo.png
     esquema: oscuro
     acento: slate
     tema_gtk: generar
     tema_shell: generar
     dock: {autohide: true}
   iconos:
+    personalizados: tema/iconos
     monocromo: true
     opacidad: 0.6
     tinte: {objetivo: "#E8E8E8"}

@@ -123,3 +123,15 @@ def test_nexus_puente_y_hangar(tmp_home):
         return nexus.return_value
 
     assert asyncio.run(hangar())[0] == "entrar"
+
+
+def test_lanzadores_colocan_iconos_en_columna(tmp_home):
+    ej = EjecutorFalso(gsettings={(SHELL, "favorite-apps"): "@as []"},
+                       programas={"gsettings", "gio"})
+    m = registro.obtener("netanyahu")  # sin gnome-extensions: no reinicia el escritorio
+    capa = CapaLanzadores(ej, Contexto(modo=m, dir_modo=m.dir))
+    capa.aplicar({})
+    posiciones = [c[-1] for c in ej.historial if "metadata::nautilus-icon-position" in c]
+    assert posiciones[0] == "150,70" and posiciones[1] == "150,188"
+    assert (Path.home() / "Escritorio" / "ultron-nexus.desktop").exists()
+    assert ["gnome-extensions", "enable", "ding@rastersoft.com"] not in ej.historial
