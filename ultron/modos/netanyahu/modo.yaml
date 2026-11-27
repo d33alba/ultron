@@ -64,7 +64,7 @@ capas:
   musica: {archivo: tema/musica.mp3, bucle: true, volumen: 70, fundido_entrada_s: 2}
   arranque: {logo: tema/arranque/logo.png}
 dependencias:
-  apt: [nmap, whois, dnsutils, lynis, libimage-exiftool-perl, binwalk, steghide, john,
+  apt: [nmap, whois, dnsutils, whatweb, lynis, libimage-exiftool-perl, binwalk, steghide, john,
         hashid, git, traceroute, nodejs, npm]
   extensiones: [blur-my-shell@aunetx, burn-my-windows@schneegans.github.com]
 funciones: [osint, radar, auditar, cve, filtrado, web, ctf, hackia, ojo]

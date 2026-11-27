@@ -110,7 +110,7 @@ def test_nexus_puente_y_hangar(tmp_home):
             await piloto.press("enter")
         return nexus.return_value
 
-    assert asyncio.run(puente()) == ("ejecutar", ["osint", "dominio", "ubuntu.com"])
+    assert asyncio.run(puente()) == ("ejecutar", ["osint", "operacion", "ubuntu.com"])
 
     async def hangar():
         estado.actualizar(modo_activo=None)

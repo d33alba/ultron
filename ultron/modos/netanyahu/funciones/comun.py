@@ -45,7 +45,7 @@ def permiso(ej: Ejecutor) -> None:
         return
     t = interfaz()
     t.consola.print(t.panel("Solo en tu red, tu equipo o con permiso escrito.",
-                            titulo="AVISO DE USO", estilo="error"))
+                            titulo="AVISO DE USO", border_style="error"))
     if not typer.confirm("¿Aceptas el aviso?"):
         raise typer.Exit(1)
     config.fijar("netanyahu", "aviso_aceptado", True)

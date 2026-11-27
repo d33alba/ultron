@@ -134,8 +134,9 @@ class Tema:
         marca = self.glifo("marca")
         if titulo:
             titulo = f"[primario]{marca} {titulo}[/]" if marca else f"[primario]{titulo}[/]"
+        borde = kw.pop("border_style", None) or kw.pop("estilo", None) or "primario"
         return Panel(
-            contenido, title=titulo, box=self.caja, border_style="primario",
+            contenido, title=titulo, box=self.caja, border_style=borde,
             title_align="left", **kw,
         )
 

@@ -386,3 +386,8 @@ def usuario(ctx: typer.Context, nombre: str, json_: bool = typer.Option(False, "
     for perfil in perfiles:
         tabla.add_row(Text(perfil["sitio"]), Text(perfil["enlace"]))
     t.consola.print(t.panel(tabla, titulo="INFORME USUARIO"))
+
+
+from .inteligencia import registrar  # noqa: E402
+
+registrar(app)
