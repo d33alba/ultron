@@ -86,8 +86,12 @@ class CapaPlasma(Capa):
         bloqueo = self._imagen(cfg.get("fondo_bloqueo")) or self._imagen(cfg.get("fondo"))
         if bloqueo and self.ej.existe("kwriteconfig5"):
             self.ej.run(["kwriteconfig5", *BLOQUEO, bloqueo.as_uri()], check=False)
-        if self.ej.existe("plasma-apply-colorscheme"):
-            esquema = "BreezeLight" if cfg.get("esquema") == "claro" else "BreezeDark"
+        self._colores("BreezeLight" if cfg.get("esquema") == "claro" else "BreezeDark")
+
+    def _colores(self, esquema: str) -> None:
+        """Plasma 5.27 aborta (y Ubuntu enseña un aviso de fallo) si se le pide el esquema que
+        ya está puesto: solo se cambia cuando hace falta."""
+        if self.ej.existe("plasma-apply-colorscheme") and self._leer(COLORES) != esquema:
             self.ej.run(["plasma-apply-colorscheme", esquema], check=False)
 
     def restaurar(self, previo: dict) -> None:
@@ -106,6 +110,4 @@ class CapaPlasma(Capa):
                 self.ej.run(["kwriteconfig5", *BLOQUEO, previo["bloqueo"]], check=False)
             else:
                 self.ej.run(["kwriteconfig5", *BLOQUEO, "--delete"], check=False)
-        if self.ej.existe("plasma-apply-colorscheme"):
-            self.ej.run(["plasma-apply-colorscheme", previo.get("colores") or "BreezeClassic"],
-                        check=False)
+        self._colores(previo.get("colores") or "BreezeClassic")

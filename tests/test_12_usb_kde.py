@@ -48,7 +48,16 @@ def test_capa_plasma_solo_en_kde(monkeypatch):
 
 def test_capa_plasma_aplica_y_restaura(monkeypatch):
     monkeypatch.setenv("XDG_CURRENT_DESKTOP", "KDE")
-    ej = EjecutorFalso(respuestas={("kreadconfig5", *plasma.COLORES): "BreezeLight\n"})
+    actual = {"esquema": "BreezeLight"}
+
+    def aplicar_esquema(cmd: list[str]) -> str:
+        actual["esquema"] = cmd[-1]
+        return ""
+
+    ej = EjecutorFalso(respuestas={
+        ("kreadconfig5", *plasma.COLORES): lambda _cmd: actual["esquema"] + "\n",
+        "plasma-apply-colorscheme": aplicar_esquema,
+    })
     capa = plasma.CapaPlasma(ej, _ctx("netanyahu"))
     cfg = registro.obtener("netanyahu").capas["escritorio"]
     previo = capa.capturar(cfg)
@@ -172,3 +181,12 @@ def test_sin_admin_no_toca_el_perfil_de_energia(monkeypatch):
     capa.restaurar(capa.capturar(cfg) | {"perfil": "balanced"})
     capa.aplicar(cfg)
     assert not ej.comandos("powerprofilesctl set")
+
+
+def test_plasma_no_pide_el_esquema_que_ya_esta(monkeypatch):
+    monkeypatch.setenv("XDG_CURRENT_DESKTOP", "KDE")
+    ej = EjecutorFalso(respuestas={("kreadconfig5", *plasma.COLORES): "BreezeDark\n"})
+    capa = plasma.CapaPlasma(ej, _ctx("netanyahu"))
+    capa.aplicar(registro.obtener("netanyahu").capas["escritorio"])
+    capa.restaurar({"colores": "BreezeDark"})
+    assert not ej.comandos("plasma-apply-colorscheme")
