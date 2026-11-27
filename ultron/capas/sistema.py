@@ -94,8 +94,15 @@ class CapaSistema(Capa):
                 if self.ctx.consola is not None:
                     self.ctx.consola.print("[aviso]  sin permisos: no se bloquean las webs que "
                                            "distraen (entra sin --sin-sudo para activarlo)[/]")
-        if cfg.get("perfil_energia") and self.ej.existe("powerprofilesctl"):
+        if cfg.get("perfil_energia") and self._puede_perfil():
             self.ej.run(["powerprofilesctl", "set", cfg["perfil_energia"]], check=False)
+
+    def _puede_perfil(self) -> bool:
+        """Sin ser administrador, el sistema rechaza el cambio y Ubuntu lo registra como un
+        fallo de powerprofilesctl (con su ventana de aviso): mejor no intentarlo."""
+        from ultron.nucleo.entorno import puede_sudo
+
+        return self.ej.existe("powerprofilesctl") and (self.ej.simular or puede_sudo())
 
     def restaurar(self, previo: dict) -> None:
         C.restaurar_claves(self.ej, previo.get("claves", {}))
@@ -106,7 +113,7 @@ class CapaSistema(Capa):
                 hosts.desbloquear(self.ej, etiqueta=f"modo-{self.ctx.modo.id}")
             except ErrorEjecucion:
                 pass
-        if previo.get("perfil") and self.ej.existe("powerprofilesctl"):
+        if previo.get("perfil") and self._puede_perfil():
             self.ej.run(["powerprofilesctl", "set", previo["perfil"]], check=False)
 
 

@@ -149,8 +149,13 @@ class Arranque(Screen):
 
             e = detectar()
             filas.append(("Sistema", f"{e.distro} {e.version}".strip() or e.so, True))
-            filas.append(("Escritorio", f"GNOME {e.gnome or '—'} · {e.sesion or '—'}",
-                          bool(e.gnome)))
+            from ultron.capas.plasma import es_kde
+
+            if not e.gnome and es_kde():
+                filas.append(("Escritorio", f"KDE Plasma · {e.sesion or '—'}", True))
+            else:
+                filas.append(("Escritorio", f"GNOME {e.gnome or '—'} · {e.sesion or '—'}",
+                              bool(e.gnome)))
         except Exception:  # noqa: BLE001
             pass
         ok, ia = estado_ia()

@@ -75,9 +75,10 @@ class CapaPlasma(Capa):
         return ruta if ruta.is_file() else None
 
     def capturar(self, cfg: dict) -> dict:
-        lista = self.ej.leer(["plasma-apply-colorscheme", "--list-schemes"])
+        # se lee kdeglobals directamente: «plasma-apply-colorscheme --list-schemes» puede
+        # abortar si Plasma aún está arrancando y Ubuntu enseñaría un aviso de fallo
         return {"fondo": fondo_actual(), "bloqueo": self._leer(BLOQUEO),
-                "colores": esquema_actual(lista.salida) if lista.ok else self._leer(COLORES)}
+                "colores": self._leer(COLORES)}
 
     def aplicar(self, cfg: dict) -> None:
         if fondo := self._imagen(cfg.get("fondo")):
@@ -104,7 +105,7 @@ class CapaPlasma(Capa):
             if previo.get("bloqueo"):
                 self.ej.run(["kwriteconfig5", *BLOQUEO, previo["bloqueo"]], check=False)
             else:
-                self.ej.run(["kwriteconfig5", *BLOQUEO[:-1], "--delete", "Image"], check=False)
+                self.ej.run(["kwriteconfig5", *BLOQUEO, "--delete"], check=False)
         if self.ej.existe("plasma-apply-colorscheme"):
             self.ej.run(["plasma-apply-colorscheme", previo.get("colores") or "BreezeClassic"],
                         check=False)

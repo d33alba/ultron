@@ -27,6 +27,11 @@ def _so(ej: Ejecutor, _o: OpcionesDoctor) -> Chequeo:
 @comprobacion("GNOME")
 def _gnome(ej: Ejecutor, _o: OpcionesDoctor) -> Chequeo:
     ent = detectar(ej)
+    from ultron.capas.plasma import es_kde
+
+    if ent.gnome_mayor is None and es_kde():
+        return Chequeo("Escritorio", "ok", "KDE Plasma: fondo, bloqueo, colores, iconos y música",
+                       "")
     if ent.gnome_mayor is None:
         return Chequeo("GNOME", "error", "No se detecta GNOME Shell",
                        "Ultron transforma el escritorio GNOME (Ubuntu 24.04 lo trae).")
@@ -38,6 +43,14 @@ def _gnome(ej: Ejecutor, _o: OpcionesDoctor) -> Chequeo:
 
 @comprobacion("Herramientas básicas")
 def _herramientas(ej: Ejecutor, _o: OpcionesDoctor) -> Chequeo:
+    from ultron.capas.plasma import es_kde
+
+    if es_kde():
+        faltan = [p for p in ("plasma-apply-wallpaperimage", "kwriteconfig5") if not ej.existe(p)]
+        if not faltan:
+            return Chequeo("Herramientas básicas", "ok", "plasma-apply-*, kwriteconfig5")
+        return Chequeo("Herramientas básicas", "aviso", "Faltan: " + ", ".join(faltan),
+                       "Plasma 5.25 o posterior")
     faltan = [p for p in ("gsettings", "dconf", "gnome-extensions") if not ej.existe(p)]
     if not faltan:
         return Chequeo("Herramientas básicas", "ok", "gsettings, dconf, gnome-extensions")

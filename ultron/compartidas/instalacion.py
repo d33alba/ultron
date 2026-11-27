@@ -65,6 +65,9 @@ def _instalar_voz(t: tema.Tema) -> None:
     """Voz neuronal de ULTRON (Piper). Si falla, queda espeak-ng: nunca para la instalación."""
     from ultron.nucleo import voz
 
+    if voz._piper():
+        t.ok("Voz de ULTRON lista")
+        return
     try:
         with t.spinner_ctx("Descargando la voz de ULTRON (Piper, unos 80 MB)"):
             voz.instalar()
@@ -111,8 +114,9 @@ def cmd_instalar(
     faltan_apt = [] if sin_apt else dependencias.apt_faltan(ej, paquetes)
     tabla = t.tabla("Qué", "Cuántos", "Detalle", titulo="Ultron · instalación")
     tabla.add_row("Paquetes apt", str(len(faltan_apt)), ", ".join(faltan_apt[:10]) or "—")
-    tabla.add_row("Extensiones GNOME", str(len(plan.extensiones) + 1),
-                  ", ".join(u.split("@")[0] for u in plan.extensiones) + ", ultron")
+    if ej.existe("gnome-extensions"):
+        tabla.add_row("Extensiones GNOME", str(len(plan.extensiones) + 1),
+                      ", ".join(u.split("@")[0] for u in plan.extensiones) + ", ultron")
     tabla.add_row("Fuentes", str(len(plan.fuentes)), ", ".join(plan.fuentes) or "—")
     c.print(tabla)
     if faltan_apt:
@@ -130,26 +134,31 @@ def cmd_instalar(
     _instalar_propia(t, ej)
     _instalar_fuentes(t, ej, plan.fuentes)
     _generar_recursos(t, modo or None, simular)
+    from ultron.capas.plasma import es_kde
     from ultron.nucleo import atajo
 
+    kde = es_kde()
     if atajo.instalar(ej):
-        t.ok("Atajo Super+U para abrir Ultron")
+        t.ok("Meta+U y «Ultron NEXUS» en el menú" if kde else "Atajo Super+U para abrir Ultron")
     if not simular:
         _instalar_voz(t)
     if not simular and (not modo or "netanyahu" in modo):
         _instalar_ojo(t, ej)
 
-    c.print(t.panel(
-        "[bold]Cierra sesión y vuelve a entrar una vez[/] para que GNOME cargue las "
-        "extensiones (en Wayland no se pueden cargar en caliente).\n"
-        "Después: [acento]ultron[/] o [acento]ultron entrar <modo>[/].",
-        titulo="Instalación terminada",
-    ))
+    aviso = ("KDE Plasma: los modos cambian fondo, bloqueo, colores, iconos y música. "
+             "Meta+U funciona tras volver a iniciar sesión.\n" if kde else
+             "[bold]Cierra sesión y vuelve a entrar una vez[/] para que GNOME cargue las "
+             "extensiones (en Wayland no se pueden cargar en caliente).\n")
+    c.print(t.panel(aviso + "Después: [acento]ultron[/] o [acento]ultron entrar <modo>[/].",
+                    titulo="Instalación terminada"))
 
 
 def _instalar_extensiones(t: tema.Tema, ej: Ejecutor, uuids: list[str], version: str) -> None:
     if not ej.existe("gnome-extensions"):
-        t.aviso("No está gnome-extensions: me salto las extensiones.")
+        from ultron.capas.plasma import es_kde
+
+        if not es_kde():
+            t.aviso("No está gnome-extensions: me salto las extensiones.")
         return
     cache = rutas.cache() / "extensiones"
     for uuid in uuids:
@@ -211,7 +220,7 @@ def _instalar_fuentes(t: tema.Tema, ej: Ejecutor, fuentes: list[str]) -> None:
         except httpx.HTTPError as e:
             t.aviso(f"Fuente {nombre}: {e}")
     if ej.existe("fc-cache"):
-        ej.run(["fc-cache", "-f"], check=False, timeout=180)
+        ej.run(["fc-cache", str(destino)], check=False, fondo=True)
 
 
 def _generar_recursos(t: tema.Tema, modos: list[str] | None, simular: bool) -> None:
@@ -275,5 +284,5 @@ def cmd_desinstalar(
         for d in (rutas.config(), rutas.estado(), rutas.datos(), rutas.cache()):
             ej.borrar(d)
     if shutil.which("fc-cache") and not simular:
-        ej.run(["fc-cache", "-f"], check=False)
+        ej.run(["fc-cache"], check=False, fondo=True)
     t.ok("Ultron desinstalado. Para quitar el programa: pipx uninstall ultron")

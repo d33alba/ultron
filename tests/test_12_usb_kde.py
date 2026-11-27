@@ -48,7 +48,7 @@ def test_capa_plasma_solo_en_kde(monkeypatch):
 
 def test_capa_plasma_aplica_y_restaura(monkeypatch):
     monkeypatch.setenv("XDG_CURRENT_DESKTOP", "KDE")
-    ej = EjecutorFalso(respuestas={"plasma-apply-colorscheme --list-schemes": LISTA})
+    ej = EjecutorFalso(respuestas={("kreadconfig5", *plasma.COLORES): "BreezeLight\n"})
     capa = plasma.CapaPlasma(ej, _ctx("netanyahu"))
     cfg = registro.obtener("netanyahu").capas["escritorio"]
     previo = capa.capturar(cfg)
@@ -59,6 +59,8 @@ def test_capa_plasma_aplica_y_restaura(monkeypatch):
     capa.restaurar(previo)
     assert ej.comandos("plasma-apply-colorscheme BreezeLight")
     assert ej.comandos("qdbus org.kde.plasmashell")  # no había fondo propio: el de Plasma
+    # sin bloqueo previo se borra la clave (kwriteconfig5 … --key Image --delete)
+    assert any(c.endswith("--key Image --delete") for c in ej.comandos("kwriteconfig5"))
 
 
 def test_motor_anade_plasma_a_los_modos_con_escritorio():
@@ -130,3 +132,43 @@ def test_instalador_usb_sin_sudo():
 
     assert not re.search(r"(^|[;&|]\s*)sudo\s", ordenes, re.M) and "apt-get" not in ordenes
     assert "--no-index" in texto and "--sin-apt" in texto
+
+
+def test_voz_quita_fonemas_que_piper_2023_no_admite(tmp_path):
+    import json
+
+    from ultron.nucleo import voz
+
+    ruta = tmp_path / "voz.onnx.json"
+    ruta.write_text(json.dumps({"phoneme_id_map": {"a": [14], "aɪ": [161], "ɔɪ": [163]},
+                                "espeak": {"voice": "es"}}), encoding="utf-8")
+    assert voz.reparar_config(ruta)
+    assert json.loads(ruta.read_text(encoding="utf-8"))["phoneme_id_map"] == {"a": [14]}
+    assert not voz.reparar_config(ruta)  # ya estaba bien
+
+
+def test_salir_borra_lanzadores_de_una_sesion_cortada():
+    from ultron.capas import lanzadores
+
+    ej = EjecutorFalso()
+    escritorio = lanzadores.dir_escritorio(ej)
+    escritorio.mkdir(parents=True, exist_ok=True)
+    resto = escritorio / "ultron-gaming-hud.desktop"
+    ajeno = escritorio / "mi-documento.desktop"
+    resto.write_text("x", encoding="utf-8")
+    ajeno.write_text("x", encoding="utf-8")
+    capa = lanzadores.CapaLanzadores(ej, _ctx("netanyahu"))
+    capa.restaurar({"creados": []})
+    assert not resto.exists() and ajeno.exists()
+
+
+def test_sin_admin_no_toca_el_perfil_de_energia(monkeypatch):
+    from ultron.capas import sistema
+
+    monkeypatch.setenv("ULTRON_SIN_SUDO", "1")
+    ej = EjecutorFalso(respuestas={"powerprofilesctl get": "balanced\n"})
+    capa = sistema.CapaSistema(ej, _ctx("gaming"))
+    cfg = {"perfil_energia": "performance"}
+    capa.restaurar(capa.capturar(cfg) | {"perfil": "balanced"})
+    capa.aplicar(cfg)
+    assert not ej.comandos("powerprofilesctl set")

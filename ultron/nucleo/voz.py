@@ -59,10 +59,38 @@ def activa() -> bool:
     return bool(config.obtener("voz", "activa", True))
 
 
+def reparar_config(ruta: Path) -> bool:
+    """Las voces actuales de Hugging Face traen fonemas de varios caracteres («aɪ»…) que el
+    Piper de 2023 no admite y aborta sin decir nada. Ese Piper solo genera fonemas de un
+    carácter, así que quitarlos no cambia cómo suena. Devuelve True si ha cambiado algo."""
+    import json
+
+    try:
+        datos = json.loads(ruta.read_text(encoding="utf-8"))
+        mapa = datos.get("phoneme_id_map") or {}
+        limpio = {k: v for k, v in mapa.items() if len(k) == 1}
+        if len(limpio) == len(mapa):
+            return False
+        datos["phoneme_id_map"] = limpio
+        ruta.write_text(json.dumps(datos, ensure_ascii=False), encoding="utf-8")
+        return True
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
+_REVISADA = False
+
+
 def _piper() -> tuple[Path, Path] | None:
+    global _REVISADA
     binario = dir_voz() / "piper" / "piper"
     modelo = dir_voz() / f"{VOZ_NOMBRE}.onnx"
-    return (binario, modelo) if binario.is_file() and modelo.is_file() else None
+    if not (binario.is_file() and modelo.is_file()):
+        return None
+    if not _REVISADA:
+        reparar_config(modelo.with_suffix(".onnx.json"))
+        _REVISADA = True
+    return binario, modelo
 
 
 def motor() -> str | None:
@@ -195,4 +223,5 @@ def instalar(progreso=None) -> Path:
     binario = destino / "piper" / "piper"
     if binario.exists():
         binario.chmod(0o755)
+    reparar_config(destino / f"{VOZ_NOMBRE}.onnx.json")
     return destino

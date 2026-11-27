@@ -250,8 +250,24 @@ class CapaLanzadores(Capa):
         for ruta in previo.get("creados", []):
             if Path(ruta).exists() or self.ej.simular:
                 self.ej.borrar(Path(ruta))
+        if not self.ej.simular:
+            self._restos()
         if previo.get("dir_scripts") and dir_scripts().exists():
             try:
                 dir_scripts().rmdir()
             except OSError:
                 pass
+
+    def _restos(self) -> None:
+        """Lanzadores que quedaron de una sesión cortada (apagón, VM congelada): sus nombres
+        «ultron-<modo>-…» solo los crea Ultron, así que nunca se borra nada ajeno."""
+        from ultron.nucleo import registro
+
+        for modo in registro.ids():
+            for carpeta in (dir_escritorio(self.ej), dir_aplicaciones()):
+                for resto in carpeta.glob(f"ultron-{modo}-*.desktop"):
+                    self.ej.borrar(resto)
+        # el NEXUS del escritorio es de los modos; el del menú lo deja la instalación
+        nexus = dir_escritorio(self.ej) / "ultron-nexus.desktop"
+        if nexus.exists():
+            self.ej.borrar(nexus)

@@ -222,7 +222,18 @@ def entrar(
         )
         _panel_modo(modo)
         _invalidar_tema()
+        _refrescar_kde(ej)
     return resultados
+
+
+def _refrescar_kde(ej: Ejecutor) -> None:
+    """KDE guarda en caché los lanzadores: sin esto, la barra pierde iconos (p. ej. Firefox)."""
+    from ultron.capas.plasma import es_kde
+
+    if es_kde() and ej.existe("kbuildsycoca5"):
+        # en segundo plano: deja un proceso de KDE vivo que mantendría abierta la salida y
+        # haría esperar a Ultron hasta agotar el tiempo
+        ej.run(["kbuildsycoca5"], check=False, fondo=True)
 
 
 def salir(
@@ -256,6 +267,7 @@ def salir(
         estado.actualizar(modo_activo=None, desde=None, capas=None)
         _panel_modo(None)
         _invalidar_tema()
+        _refrescar_kde(ej)
     return resultados
 
 

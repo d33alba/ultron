@@ -99,12 +99,16 @@ class CapaFuentes(Capa):
 
     def aplicar(self, cfg: dict) -> None:
         origen = self.ctx.recurso(cfg.get("carpeta", "tema/fuentes"))
+        copiadas = 0
         if origen.is_dir():
             for f in origen.iterdir():
                 if f.suffix.lower() in (".ttf", ".otf"):
                     self.ej.copiar(f, self._destino() / f.name)
-        if self.ej.existe("fc-cache"):
-            self.ej.run(["fc-cache", "-f"], check=False, timeout=120)
+                    copiadas += 1
+        if copiadas and self.ej.existe("fc-cache"):
+            # solo esta carpeta y en segundo plano: «fc-cache -f» de todo el sistema puede
+            # tardar minutos (PC del centro) y nunca debe frenar ni cancelar el modo
+            self.ej.run(["fc-cache", str(self._destino())], check=False, fondo=True)
 
     def restaurar(self, previo: dict) -> None:
         if not previo.get("existia"):
