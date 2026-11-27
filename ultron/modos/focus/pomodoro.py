@@ -84,9 +84,9 @@ def ejecutar(
                 fases.append(("descanso", descanso))
             for nombre, duracion in fases:
                 if nombre == "trabajo" and bloquear and lista:
-                    hosts.bloquear(ej, lista, ETIQUETA)
+                    bloquear = _intentar(hosts.bloquear, ej, lista, ETIQUETA)
                 elif bloquear:
-                    hosts.desbloquear(ej, ETIQUETA)
+                    _intentar(hosts.desbloquear, ej, ETIQUETA)
                 total = duracion * 60
                 fin = reloj.ahora() + total
                 panel.escribir(pomodoro={"fin": fin, "total": total, "fase": nombre,
@@ -101,6 +101,21 @@ def ejecutar(
                     al_terminar_fase(Fase(nombre, ciclo, total, 0))
     finally:
         if bloquear:
-            hosts.desbloquear(ej, ETIQUETA)
+            _intentar(hosts.desbloquear, ej, ETIQUETA)
         panel.escribir(pomodoro=None)
     return trabajados
+
+
+def _intentar(funcion: Callable[..., object], *args: object) -> bool:
+    """El bloqueo de webs necesita sudo: si no se puede, el pomodoro sigue sin él."""
+    from ultron.nucleo.ejecutor import ErrorEjecucion
+
+    try:
+        funcion(*args)
+        return True
+    except ErrorEjecucion:
+        from ultron.ui import tema
+
+        tema.actual().aviso("No he podido bloquear las webs (hacen falta permisos). "
+                            "El pomodoro sigue sin bloqueo.")
+        return False

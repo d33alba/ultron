@@ -49,6 +49,9 @@ class ClienteOpenAI(ClienteHTTP):
         cuerpo: dict[str, Any] = {"model": self.modelo, "messages": mensajes, "stream": stream}
         if temperatura is not None:
             cuerpo["temperature"] = temperatura
+        if max_tokens is None and self._es_local():
+            # tope de seguridad: los modelos pequeños en modo JSON a veces no paran nunca
+            max_tokens = 1200 if json else 1600
         if max_tokens is not None:
             cuerpo["max_tokens"] = max_tokens
         if json:
@@ -63,6 +66,18 @@ class ClienteOpenAI(ClienteHTTP):
         max_tokens: int | None = None,
         json: bool = False,
     ) -> str:
+        if self._es_local():
+            # Los modelos locales en CPU pueden tardar minutos: en streaming el límite de
+            # tiempo cuenta entre trozo y trozo, no para la respuesta entera.
+            try:
+                return "".join(self.chat_stream(mensajes, temperatura=temperatura,
+                                                max_tokens=max_tokens, json=json))
+            except E.IAError as e:
+                if not json or isinstance(e, (E.SinConexion, E.ClaveInvalida, E.SinSaldo,
+                                              E.TiempoAgotado, E.ModeloNoExiste)):
+                    raise
+                return "".join(self.chat_stream(mensajes, temperatura=temperatura,
+                                                max_tokens=max_tokens, json=False))
         cuerpo = self._cuerpo(mensajes, temperatura, max_tokens, json, False)
         try:
             r = self._peticion("POST", "/chat/completions", json=cuerpo)
@@ -79,6 +94,12 @@ class ClienteOpenAI(ClienteHTTP):
                 "La respuesta no tiene el formato de OpenAI (sin «choices»).",
                 "¿La URL apunta a una API compatible con OpenAI?",
             ) from e
+
+    def _es_local(self) -> bool:
+        from urllib.parse import urlparse
+
+        host = (urlparse(self.base).hostname or "").lower()
+        return host in {"localhost", "127.0.0.1", "0.0.0.0", "::1"} or host.endswith(".local")
 
     def chat_stream(
         self,
