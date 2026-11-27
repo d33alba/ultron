@@ -143,11 +143,14 @@ def huella(*partes: Any) -> str:
     return h.hexdigest()[:16]
 
 
-def matar(pid: int | None) -> None:
+def matar(pid: int | None, forzar: bool = False) -> None:
+    """Termina un proceso. `forzar` usa SIGKILL (conky se cuelga al cerrarse en Wayland y
+    Ubuntu enseñaría un aviso de «la aplicación se cerró inesperadamente»)."""
     if not pid:
         return
+    senal = getattr(signal, "SIGKILL", signal.SIGTERM) if forzar else signal.SIGTERM
     try:
-        os.kill(int(pid), signal.SIGTERM)
+        os.kill(int(pid), senal)
     except (OSError, ValueError):
         pass
 

@@ -12,6 +12,7 @@ from ultron.nucleo import rutas
 from ultron.ui.tema import cargar_tema
 
 INTERFAZ = "org.gnome.desktop.interface"
+SNAP_APPS = Path("/var/lib/snapd/desktop/applications")
 FLATPAK_APPS = [Path("/var/lib/flatpak/exports/share/applications"),
                 rutas.home() / ".local/share/flatpak/exports/share/applications"]
 
@@ -63,13 +64,15 @@ class CapaIconos(Capa):
         creados = []
         destino_apps = rutas.xdg_datos_raiz() / "applications"
         for icono in propios.iterdir():
-            for carpeta in FLATPAK_APPS:
-                original = carpeta / f"{icono.stem}.desktop"
+            candidatos = [c / f"{icono.stem}.desktop" for c in FLATPAK_APPS]
+            # las snaps (Firefox, Tienda…) apuntan a un PNG fijo: mismo truco
+            candidatos.append(SNAP_APPS / f"{icono.stem}_{icono.stem}.desktop")
+            for original in candidatos:
                 if not original.exists():
                     continue
                 texto = original.read_text(encoding="utf-8", errors="ignore")
                 texto = re.sub(r"(?m)^Icon=.*$", f"Icon={icono.stem}", texto)
-                destino = destino_apps / f"{icono.stem}.desktop"
+                destino = destino_apps / original.name
                 if destino.exists():
                     continue
                 self.ej.escribir(destino, texto + "\nX-Ultron=1\n")

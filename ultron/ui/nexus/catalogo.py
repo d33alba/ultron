@@ -81,7 +81,7 @@ FICHAS: tuple[Ficha, ...] = (
     Ficha("netanyahu", "ojo abrir", "◈", "OJO DE DIOS",
           "Globo terráqueo en directo: aviones, satélites, barcos y cámaras del planeta.",
           claves="mapa globo mundo aviones satelites planeta vigilancia", escritorio=True),
-    Ficha("netanyahu", "osint operacion", "⦿", "Investigar objetivo",
+    Ficha("netanyahu", "osint operacion", "⊕", "Investigar objetivo",
           "Todas las fuentes a la vez sobre un dominio o IP: exposición, CVE, mapa y dossier.",
           (A("objetivo", "Dominio, IP pública o URL"),
            S("--mapa", "Situarlo en el Ojo de Dios")),

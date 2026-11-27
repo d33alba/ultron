@@ -8,7 +8,7 @@ from pathlib import Path
 from ultron.capas import comun as C
 from ultron.capas.base import Capa, registrar_capa
 from ultron.nucleo import estado, hosts, rutas
-from ultron.nucleo.ejecutor import Ejecutor
+from ultron.nucleo.ejecutor import Ejecutor, ErrorEjecucion
 from ultron.ui.tema import cargar_tema
 
 NOTIF = "org.gnome.desktop.notifications"
@@ -87,7 +87,13 @@ class CapaSistema(Capa):
         if cfg.get("atajo_clip") and self.ej.existe("dconf"):
             _atajo(self.ej)
         if cfg.get("bloquear"):
-            hosts.bloquear(self.ej, list(cfg["bloquear"]), etiqueta=f"modo-{self.ctx.modo.id}")
+            try:
+                hosts.bloquear(self.ej, list(cfg["bloquear"]),
+                               etiqueta=f"modo-{self.ctx.modo.id}")
+            except ErrorEjecucion:
+                if self.ctx.consola is not None:
+                    self.ctx.consola.print("[aviso]  sin permisos: no se bloquean las webs que "
+                                           "distraen (entra sin --sin-sudo para activarlo)[/]")
         if cfg.get("perfil_energia") and self.ej.existe("powerprofilesctl"):
             self.ej.run(["powerprofilesctl", "set", cfg["perfil_energia"]], check=False)
 
@@ -96,7 +102,10 @@ class CapaSistema(Capa):
         for clave, valor in previo.get("atajo", {}).items():
             C.dconf_restaurar(self.ej, clave, valor)
         if previo.get("hosts"):
-            hosts.desbloquear(self.ej, etiqueta=f"modo-{self.ctx.modo.id}")
+            try:
+                hosts.desbloquear(self.ej, etiqueta=f"modo-{self.ctx.modo.id}")
+            except ErrorEjecucion:
+                pass
         if previo.get("perfil") and self.ej.existe("powerprofilesctl"):
             self.ej.run(["powerprofilesctl", "set", previo["perfil"]], check=False)
 
@@ -208,7 +217,7 @@ class CapaWidgets(Capa):
             "NoDisplay=true\n"))
 
     def restaurar(self, previo: dict) -> None:
-        C.matar(estado.obtener("conky_pid"))
+        C.matar(estado.obtener("conky_pid"), forzar=True)
         if not self.ej.simular:
             estado.actualizar(conky_pid=None)
         conf, auto = self._rutas()

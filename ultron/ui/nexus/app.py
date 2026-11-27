@@ -437,7 +437,10 @@ class Puente(Screen):
             cab.append(f"  ·  {self.modo.lema}", style=f"italic {p['acento']}")
         cab.append("     ")
         cab.append(f"● {ia}" if ok else f"○ {ia}", style=p["ok"] if ok else p["aviso"])
-        cab.append(f"     {datetime.now().strftime('%A %d · %H:%M:%S')}",
+        ahora = datetime.now()
+        dia = ("lunes", "martes", "miércoles", "jueves", "viernes", "sábado",
+               "domingo")[ahora.weekday()]
+        cab.append(f"     {dia} {ahora:%d} · {ahora:%H:%M:%S}",
                    style=f"bold {p['texto']}")
         self.query_one("#cabecera", Static).update(cab)
         self.query_one("#telemetria", Static).update(self._telemetria(d))
@@ -452,7 +455,8 @@ class Puente(Screen):
             valor = d.get(clave)
             if valor is None:
                 continue
-            color = p["error"] if valor > 0.85 else (p["aviso"] if valor > 0.6 else p["ok"])
+            nivel = 1 - valor if clave == "bateria" else valor
+            color = p["error"] if nivel > 0.85 else (p["aviso"] if nivel > 0.6 else p["ok"])
             t.append(f"{nombre:<8}", style=p["texto"])
             t.append_text(vista.barra(valor, 12, color, p["borde"]))
             t.append(f" {valor * 100:3.0f}%\n", style=color)
