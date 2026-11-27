@@ -46,6 +46,33 @@ def dependencias(destino: Path) -> None:
              "--python-version", version, "--implementation", "cp", str(rueda), *extra)
     _pip("download", "--quiet", "--dest", str(destino), "--only-binary=:all:", "--no-deps",
          "pip")
+    podar(destino)
+
+
+def podar(destino: Path) -> list[str]:
+    """Quita las versiones nuevas que exigen Python > 3.10 cuando hay otra que vale para
+    todos: con --find-links, pip elige la más alta y luego la rechaza (Ubuntu 22.04)."""
+    import re
+    import zipfile
+
+    def requiere(rueda: Path) -> str:
+        with zipfile.ZipFile(rueda) as z:
+            meta = next(n for n in z.namelist() if n.endswith(".dist-info/METADATA"))
+            texto = z.read(meta).decode("utf-8", "replace")
+        m = re.search(r"^Requires-Python:\s*(.+)$", texto, re.M)
+        return m.group(1).strip() if m else ""
+
+    por_proyecto: dict[str, list[Path]] = {}
+    for rueda in destino.glob("*-none-any.whl"):
+        por_proyecto.setdefault(rueda.name.split("-")[0].lower(), []).append(rueda)
+    quitadas = []
+    for ruedas in por_proyecto.values():
+        validas = [r for r in ruedas if not re.search(r">=\s*3\.1[1-9]", requiere(r))]
+        if validas and len(validas) < len(ruedas):
+            for r in set(ruedas) - set(validas):
+                r.unlink()
+                quitadas.append(r.name)
+    return quitadas
 
 
 def extensiones(destino: Path) -> None:
