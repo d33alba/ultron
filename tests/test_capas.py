@@ -315,8 +315,12 @@ def test_musica_silenciar_persiste_y_se_borra_al_entrar(tmp_home):
 
 def test_musica_sin_archivo_no_falla(tmp_home):
     ej = EjecutorFalso()
-    sonido.CapaMusica(ej, _ctx("netanyahu")).aplicar({"archivo": "tema/musica.mp3"})
+    sonido.CapaMusica(ej, _ctx("netanyahu")).aplicar({"archivo": "tema/no-existe.mp3"})
     assert not ej.comandos("mpv")
+
+
+def test_netanyahu_trae_su_musica():
+    assert (registro.obtener("netanyahu").dir / "tema" / "musica.mp3").is_file()
 
 
 # --- sistema / hosts ---------------------------------------------------------------------------------
