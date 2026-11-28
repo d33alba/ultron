@@ -111,23 +111,38 @@ def cmd_instalar(
             if disponible.ok and f"Package: {opcional}" in disponible.salida.splitlines():
                 paquetes.append(opcional)
                 break
-    faltan_apt = [] if sin_apt else dependencias.apt_faltan(ej, paquetes)
+    from ultron.nucleo import herramientas
+    from ultron.nucleo.entorno import puede_sudo
+
+    gnome_ok = ej.existe("gnome-shell")
+    paquetes = [p for p in paquetes if gnome_ok or p not in herramientas.SOLO_GNOME]
+    faltan = herramientas.faltan(ej, paquetes)
+    usb = herramientas.lista_usb(rutas.offline())
+    con_apt = [] if sin_apt or not puede_sudo() else faltan
     tabla = t.tabla("Qué", "Cuántos", "Detalle", titulo="Ultron · instalación")
-    tabla.add_row("Paquetes apt", str(len(faltan_apt)), ", ".join(faltan_apt[:10]) or "—")
+    tabla.add_row("Herramientas que faltan", str(len(faltan)), ", ".join(faltan[:10]) or "—")
+    if faltan:
+        tabla.add_row("Cómo", "", "apt (sudo)" if con_apt else
+                      ("desde el USB, sin sudo" if usb else "no hay forma: ni sudo ni USB"))
     if ej.existe("gnome-extensions"):
         tabla.add_row("Extensiones GNOME", str(len(plan.extensiones) + 1),
                       ", ".join(u.split("@")[0] for u in plan.extensiones) + ", ultron")
     tabla.add_row("Fuentes", str(len(plan.fuentes)), ", ".join(plan.fuentes) or "—")
     c.print(tabla)
-    if faltan_apt:
+    if con_apt:
         t.info("Los paquetes apt necesitan sudo. Ocupan aproximadamente 300–600 MB.")
     if not simular and not si and not typer.confirm("¿Instalar?", default=True):
         raise typer.Exit(1)
 
-    if faltan_apt:
-        ej.run(["apt-get", "update"], sudo=True, check=False, timeout=None, interactivo=True)
-        ej.run(["apt-get", "install", "-y", *faltan_apt],
-               sudo=True, timeout=None, interactivo=True)
+    if con_apt:
+        try:
+            ej.run(["apt-get", "update"], sudo=True, check=False, timeout=None,
+                   interactivo=True)
+            ej.run(["apt-get", "install", "-y", *con_apt],
+                   sudo=True, timeout=None, interactivo=True)
+        except ErrorEjecucion as e:
+            t.aviso(f"apt no ha podido instalarlo todo ({e}); pruebo con el USB.")
+    _instalar_herramientas(t, ej, paquetes, simular)
 
     gnome = detectar(ej).gnome_mayor
     _instalar_extensiones(t, ej, plan.extensiones, str(gnome or 46))
@@ -153,6 +168,38 @@ def cmd_instalar(
              "extensiones (en Wayland no se pueden cargar en caliente).\n")
     c.print(t.panel(aviso + "Después: [acento]ultron[/] o [acento]ultron entrar <modo>[/].",
                     titulo="Instalación terminada"))
+
+
+def _instalar_herramientas(t: tema.Tema, ej: Ejecutor, paquetes: list[str],
+                           simular: bool) -> None:
+    """Lo que siga faltando tras apt sale del USB (sin sudo); el resto se explica."""
+    from ultron.nucleo import herramientas as H
+
+    faltan = H.faltan(ej, paquetes)
+    if not faltan:
+        t.ok(f"Herramientas del sistema: las {len(paquetes)} están")
+        return
+    offline = rutas.offline()
+    hechos: list[str] = []
+    if offline is not None and H.lista_usb(offline):
+        try:
+            with t.spinner_ctx(f"Instalando {len(faltan)} herramientas desde el USB (sin sudo)"):
+                hechos, _ = H.instalar_desde_usb(ej, offline, faltan)
+        except ErrorEjecucion as e:
+            t.aviso(f"No se pudieron desempaquetar las herramientas: {e}")
+        H.activar_path()
+    if hechos:
+        t.ok(f"Herramientas instaladas desde el USB: {', '.join(hechos)}")
+    quedan = [p for p in faltan if p not in hechos]
+    if simular or not quedan:
+        return
+    opcionales = [p for p in quedan if p in H.MOTIVO]
+    for p in opcionales:
+        t.info(f"{p}: no se instala ({H.MOTIVO[p]}). Es opcional.")
+    reales = [p for p in quedan if p not in H.MOTIVO]
+    if reales:
+        t.aviso(f"Siguen faltando: {', '.join(reales)}. Con internet y sudo: "
+                f"sudo apt install {' '.join(reales)}")
 
 
 def _instalar_extensiones(t: tema.Tema, ej: Ejecutor, uuids: list[str], version: str) -> None:
@@ -285,6 +332,9 @@ def cmd_desinstalar(
     from ultron.nucleo import atajo
 
     atajo.quitar(ej)
+    from ultron.nucleo import herramientas
+
+    herramientas.desinstalar(ej)
     instaladas = jsonio.leer(ruta_instaladas(), {}) or {}
     for uuid in instaladas.get("extensiones", []):
         ej.run(["gnome-extensions", "uninstall", uuid], check=False)

@@ -63,9 +63,11 @@ def _deps(ej: Ejecutor, op: OpcionesDoctor) -> list[Chequeo]:
     if not op.completo:
         return []
     from ultron.compartidas.instalacion import PROPIA
-    from ultron.nucleo import rutas
+    from ultron.nucleo import herramientas, rutas
 
-    faltan_apt = set(apt_faltan(ej, plan().apt))
+    faltan_apt = set(herramientas.faltan(ej, plan().apt))
+    if not ej.existe("gnome-shell"):
+        faltan_apt -= herramientas.SOLO_GNOME
     extensiones = ej.existe("gnome-extensions")
     listadas = ej.leer(["gnome-extensions", "list"]) if extensiones else None
     disponibles = set(listadas.salida.splitlines()) if listadas and listadas.ok else set()
