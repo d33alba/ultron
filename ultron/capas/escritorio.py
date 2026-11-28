@@ -46,6 +46,10 @@ class CapaEscritorio(Capa):
     descripcion = "Fondo, pantalla de bloqueo, temas de ventanas y de la barra, dock"
 
     def disponible(self) -> tuple[bool, str]:
+        from ultron.capas.sesion_grafica import sesion
+
+        if sesion() not in {None, "GNOME"}:
+            return False, "los ajustes de GNOME no corresponden a esta sesión"
         if not self.ej.existe("gsettings"):
             return False, "no hay gsettings (¿estás en GNOME?)"
         return True, ""

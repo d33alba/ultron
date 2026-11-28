@@ -82,6 +82,10 @@ def transicion(viejo: Tema | None, nuevo: Tema) -> None:
     """Línea de "desmontando" el modo anterior con glitch."""
     if not activas() or viejo is None:
         return
+    from ultron.ui.pantalla_pixel import avance
+
+    if avance(viejo, duracion=0.3, cerrar=True):
+        return
     a, b = ("░▒▓", "▓▒░") if soporta_unicode() else ("##", "##")
     texto = Text.from_markup(f"[apagado]{a} desmontando modo {viejo.nombre.lower()} {b}[/]")
     glitch(viejo.consola, [texto], duracion=0.5, pasos=6)

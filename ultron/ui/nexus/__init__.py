@@ -34,9 +34,16 @@ def _toca_arranque() -> bool:
 
 def ejecutar_ultron(argv: list[str]) -> int:
     """Lanza `ultron <argv>` en esta misma terminal (con todo su color y animación)."""
+    from ultron.ui.tema import OPCIONES
+
     entorno = dict(os.environ, ULTRON_DESDE_NEXUS="1")
+    opciones = []
+    if OPCIONES.sin_animaciones:
+        opciones.append("--sin-animaciones")
+    if OPCIONES.sin_color:
+        opciones.append("--sin-color")
     try:
-        return subprocess.run([sys.executable, "-m", "ultron", *argv], env=entorno,
+        return subprocess.run([sys.executable, "-m", "ultron", *opciones, *argv], env=entorno,
                               check=False).returncode
     except KeyboardInterrupt:
         return 130
@@ -74,6 +81,12 @@ def pausa_final(codigo: int) -> None:
 
 
 def abrir(pantalla: str | None = None, funcion: str | None = None) -> None:
+    from ultron.ui import tema
+
+    if not sys.stdin.isatty() or not sys.stdout.isatty():
+        tema.actual().consola.print("NEXUS se abre en una terminal interactiva. "
+                                    "Consulta los modos con ultron modos.")
+        return
     from ultron.ui.nexus.app import Nexus
 
     arranque, aviso = _toca_arranque(), ""

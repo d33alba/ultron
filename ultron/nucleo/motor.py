@@ -175,6 +175,11 @@ def entrar(
         elif confirmar_sudo is not None and not confirmar_sudo(con_sudo):
             saltar_sudo = True
 
+    from ultron.capas.sesion_grafica import sesion
+
+    if sesion() == "KDE" and any(cls.nombre == "sesion_grafica" for cls in clases):
+        clases = [cls for cls in clases if cls.nombre != "plasma"]
+
     ctx = _contexto(modo, consola)
     inst: dict[str, Any] = {"modo": modo.id, "inicio": _ahora(), "capas": []}
     if not simular:

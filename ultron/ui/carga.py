@@ -1,8 +1,4 @@
-"""Pantalla de carga mientras se aplican las capas.
-
-En una sesión gráfica con GTK 4 abre una ventana a pantalla completa con una animación propia
-del modo. Si no se puede (Windows, CI, sin PyGObject), muestra el progreso en la terminal.
-"""
+"""Pantalla de carga mientras se aplican las capas."""
 
 from __future__ import annotations
 
@@ -13,10 +9,13 @@ import time
 from collections.abc import Callable
 from typing import Any, TypeVar
 
+from rich.console import Group
 from rich.live import Live
+from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
+from ultron.ui import pantalla_pixel
 from ultron.ui.tema import Tema, animaciones_activas
 
 T = TypeVar("T")
@@ -52,15 +51,18 @@ def ejecutar(
     trabajo: Trabajo,
     *,
     usar_gtk: bool = True,
+    mostrar: bool = True,
 ) -> Any:
     """Ejecuta `trabajo(progreso)` mostrando la pantalla de carga adecuada."""
-    if usar_gtk and gtk_disponible():
+    if not mostrar or not animaciones_activas():
+        return _simple(tema, trabajo)
+    if pantalla_pixel.habilitada(tema):
+        return _con_rich(tema, titulo, capas, trabajo)
+    if usar_gtk and tema.consola.color_system and gtk_disponible():
         try:
             return _con_gtk(tema, titulo, capas, trabajo)
         except _ErrorGtk:
             pass
-    if animaciones_activas():
-        return _con_rich(tema, titulo, capas, trabajo)
     return _simple(tema, trabajo)
 
 
@@ -106,6 +108,10 @@ def _tabla(tema: Tema, titulo: str, capas: list[str], estados: dict[str, str]) -
 def _con_rich(tema: Tema, titulo: str, capas: list[str], trabajo: Trabajo) -> Any:
     estados: dict[str, str] = {}
     vistas = list(capas)
+    inicio = time.monotonic()
+    siguiente = 0.0
+    imagen = Text()
+    ritmo = pantalla_pixel.Ritmo(30)
 
     def progreso(capa: str, estado: str) -> None:
         if capa not in vistas:
@@ -113,10 +119,21 @@ def _con_rich(tema: Tema, titulo: str, capas: list[str], trabajo: Trabajo) -> An
         estados[capa] = estado
 
     class _Vista:
-        def __rich__(self_inner):  # noqa: N805
-            return _tabla(tema, titulo, vistas, estados)
+        def __rich__(self_inner) -> Group:  # noqa: N805
+            nonlocal imagen, siguiente
+            ahora = time.monotonic()
+            ancho = min(120, tema.consola.width)
+            alto = max(4, min(14, tema.consola.height - len(vistas) - 7))
+            if ahora >= siguiente:
+                imagen = pantalla_pixel.vista(tema, ancho, alto, ahora - inicio,
+                                              round(1 / ritmo.intervalo))
+                ritmo.medir(time.monotonic() - ahora)
+                siguiente = ahora + ritmo.intervalo
+            tabla = _tabla(tema, titulo, list(vistas), estados.copy())
+            fondo = tema.paleta.get("fondo", "#101418")
+            return Group(imagen, Panel(tabla, border_style="primario", style=f"on {fondo}"))
 
-    with Live(_Vista(), console=tema.consola, refresh_per_second=12, transient=False):
+    with Live(_Vista(), console=tema.consola, refresh_per_second=ritmo.maximo, transient=True):
         return trabajo(progreso)
 
 

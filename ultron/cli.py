@@ -13,6 +13,7 @@ from typer.core import TyperGroup
 
 from ultron import __version__
 from ultron.nucleo import entrega, estado, motor, registro, xp
+from ultron.nucleo import herramientas as _herramientas
 from ultron.nucleo.doctor import OpcionesDoctor
 from ultron.nucleo.doctor import ejecutar as ejecutar_doctor
 from ultron.nucleo.ejecutor import Ejecutor, ErrorEjecucion
@@ -39,6 +40,7 @@ class GrupoUltron(TyperGroup):
 
 
 _espanol.aplicar()
+_herramientas.activar_path()  # nmap, exiftool… desempaquetados del USB sin sudo
 
 app = typer.Typer(
     cls=GrupoUltron,
@@ -302,7 +304,7 @@ def cmd_entrar(
                      progreso=_imprimir_progreso(nuevo), consola=c)
     else:
         carga.ejecutar(nuevo, f"{nuevo.glifo('marca')} {modo.nombre}", nombres, trabajo,
-                       usar_gtk=not sin_carga)
+                       mostrar=not sin_carga)
     if simular:
         c.print(f"[apagado]{len(ej.historial)} operaciones simuladas.[/]")
         return

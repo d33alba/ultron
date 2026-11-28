@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 
 from rich.text import Text
 
-from ultron.ui import animaciones
+from ultron.ui import animaciones, pantalla_pixel
+from ultron.ui.escenas import titulo
 from ultron.ui.tema import Tema, soporta_unicode
 
 _HEBREO = re.compile(r"[֐-׿]+")
+_ASCII = str.maketrans({"█": "#", "▀": "=", "▄": "_", "░": ".", "▒": ":", "▓": "#",
+                       "✡": "*", "◆": "*", "·": ".", "─": "-", "—": "-", "│": "|"})
 
 
 def _hex_a_rgb(h: str) -> tuple[int, int, int]:
@@ -53,7 +57,8 @@ def lineas_banner(
         compacto = ancho_terminal < 80 or not tema.banner
     fuente = (tema.banner_compacto or tema.banner) if compacto else tema.banner
     if not soporta_unicode():
-        fuente = _sin_hebreo(fuente)
+        fuente = unicodedata.normalize("NFKD", _sin_hebreo(fuente).translate(_ASCII))
+        fuente = fuente.encode("ascii", "ignore").decode("ascii")
     lineas = [Text.from_markup(linea) for linea in fuente.splitlines()]
     if tema.degradado:
         ancho = max((len(t.plain) for t in lineas), default=1)
@@ -63,6 +68,14 @@ def lineas_banner(
 
 def mostrar_banner(tema: Tema, animado: bool = True, compacto: bool | None = None) -> None:
     consola = tema.consola
+    if (compacto is not True and consola.width >= 80
+            and pantalla_pixel.habilitada(tema) and animaciones.activas()):
+        if animado:
+            pantalla_pixel.avance(tema)
+        ancho = min(120, consola.width)
+        consola.print(pantalla_pixel.vista(tema, ancho, 8, 1.25), crop=True)
+        consola.print(titulo(tema.nombre, tema.paleta.get("primario", "cyan"), ancho=ancho))
+        return
     lineas = lineas_banner(tema, consola.width, compacto)
     if animado and animaciones.activas():
         animaciones.entrada(consola, lineas, tema.entrada)

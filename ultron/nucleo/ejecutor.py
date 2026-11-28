@@ -74,6 +74,7 @@ class Ejecutor:
         directorio: Path | None = None,
         registro: Path | None = None,
         interactivo: bool = False,
+        entorno: dict[str, str] | None = None,
     ) -> Resultado:
         cmd = [str(c) for c in cmd]
         if sudo:
@@ -91,6 +92,8 @@ class Ejecutor:
             opciones["directorio"] = directorio
         if registro is not None:
             opciones["registro"] = registro
+        if entorno is not None:
+            opciones["entorno"] = os.environ | entorno
         return self._ejecutar(cmd, check=check, entrada=entrada, timeout=timeout, fondo=fondo,
                               **opciones)
 
@@ -114,6 +117,7 @@ class Ejecutor:
         directorio: Path | None = None,
         registro: Path | None = None,
         interactivo: bool = False,
+        entorno: dict[str, str] | None = None,
     ) -> Resultado:
         try:
             if fondo:
@@ -125,12 +129,12 @@ class Ejecutor:
                 with salida as flujo:
                     proc = subprocess.Popen(
                         cmd, stdout=flujo, stderr=flujo, stdin=subprocess.DEVNULL,
-                        start_new_session=True, cwd=directorio,
+                        start_new_session=True, cwd=directorio, env=entorno,
                     )
                 return Resultado(0, str(proc.pid), "")
             p = subprocess.run(
                 cmd, input=entrada, capture_output=not interactivo, text=True, timeout=timeout,
-                cwd=directorio,
+                cwd=directorio, env=entorno,
             )
         except FileNotFoundError as e:
             raise ErrorEjecucion(f"No encuentro el programa «{cmd[0]}». ¿Está instalado?") from e

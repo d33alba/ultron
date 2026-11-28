@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -31,14 +32,16 @@ def leer() -> dict[str, Any]:
 def guardar(datos: dict[str, Any]) -> None:
     destino = ruta()
     destino.parent.mkdir(parents=True, exist_ok=True)
-    temporal = destino.with_name("config.toml.tmp")
-    limpio = _sin_nulos(datos)
-    temporal.write_bytes(tomli_w.dumps(limpio).encode("utf-8"))
-    try:
-        os.chmod(temporal, 0o600)
-    except OSError:
-        pass
-    os.replace(temporal, destino)
+    contenido = tomli_w.dumps(_sin_nulos(datos)).encode("utf-8")
+    with tempfile.NamedTemporaryFile(dir=destino.parent, delete=False) as archivo:
+        temporal = Path(archivo.name)
+        try:
+            archivo.write(contenido)
+            archivo.close()
+            os.replace(temporal, destino)
+        finally:
+            archivo.close()
+            temporal.unlink(missing_ok=True)
 
 
 def _sin_nulos(d: dict[str, Any]) -> dict[str, Any]:

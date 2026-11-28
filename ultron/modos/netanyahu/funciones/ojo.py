@@ -5,7 +5,10 @@ import os
 import re
 import time
 from contextlib import nullcontext
+from enum import Enum
 from pathlib import Path
+from urllib.parse import urlencode
+from uuid import uuid4
 
 import httpx
 import psutil
@@ -13,15 +16,48 @@ import typer
 from rich.live import Live
 from rich.text import Text
 
-from ultron.nucleo import jsonio, rutas
-from ultron.nucleo.ejecutor import Ejecutor
+from ultron.nucleo import config, jsonio, rutas
+from ultron.nucleo.ejecutor import Ejecutor, ErrorEjecucion, Resultado
 from ultron.ui.tema import animaciones_activas
 
 from .comun import ejecutor, fallo, interfaz, mostrar, requerir, texto_terminal
+from .ojo_camaras import actualizar_camaras
+from .ojo_parche import VERSION, aplicar_parche, quitar_parche
 
 app = typer.Typer(help="Instala y abre el globo 3D de God's Eye View.")
 REPO = "https://github.com/bilawalsidhu/gods-eye-view.git"
 URL = "http://127.0.0.1:4173"
+VARIABLES = {
+    "google": "GOOGLE_MAPS_API_KEY",
+    "tomtom": "TOMTOM_API_KEY",
+    "cesium": "CESIUM_ION_TOKEN",
+}
+
+
+class Proveedor(str, Enum):
+    google = "google"
+    tomtom = "tomtom"
+    cesium = "cesium"
+
+
+class Calidad(str, Enum):
+    baja = "baja"
+    media = "media"
+    alta = "alta"
+
+
+def entorno_servidor(ajustes: dict) -> dict[str, str]:
+    """Pasa solo las claves configuradas al entorno del proceso hijo."""
+    return {variable: ajustes[clave] for clave, variable in VARIABLES.items()
+            if isinstance(ajustes.get(clave), str) and ajustes[clave]}
+
+
+def _instalado(destino: Path) -> bool:
+    try:
+        return ((destino / ".git" / "ultron-ojo.patch").is_file()
+                and (destino.parent / "instalado").read_text(encoding="utf-8").strip() == VERSION)
+    except OSError:
+        return False
 
 
 def carpeta() -> Path:
@@ -45,16 +81,19 @@ CAPAS_DEFECTO = "vuelos,satelites"
 
 
 def url_vista(lat: float = 40.4, lon: float = -3.7, alt: float = 20_000_000,
-              capas: str = CAPAS_DEFECTO) -> str:
+              capas: str = CAPAS_DEFECTO, *, calidad: Calidad | None = None,
+              cinematica: bool = False) -> str:
     """Enlace que abre el globo ya situado y con capas (formato de enlace v2 del proyecto)."""
-    from urllib.parse import urlencode
-
     fichas = [CAPAS[c.strip().lower()] for c in capas.split(",") if c.strip().lower() in CAPAS]
     vista = {"v": 2, "lat": f"{lat:.4f}", "lon": f"{lon:.4f}", "alt": int(alt), "heading": 0,
-             "pitch": -90, "roll": 0}
+             "pitch": -83 if cinematica else -90, "roll": 0}
+    if cinematica:
+        vista["heading"] = 18
     if fichas:
         vista["l"] = ".".join(dict.fromkeys(fichas))
-    return f"{URL}/?welcome=0#{urlencode(vista)}"
+    opciones = {"welcome": 0, "lang": "es",
+                "ultronCalidad": calidad.value if calidad else "auto"}
+    return f"{URL}/?{urlencode(opciones)}#{urlencode(vista)}"
 
 
 NODE_DIST = "https://nodejs.org/dist/latest-v24.x/"
@@ -146,14 +185,16 @@ def preparar(ej: Ejecutor, destino: Path, si: bool = False) -> None:
     with (nullcontext() if ej.simular else interfaz().spinner_ctx("INSTALANDO GOD'S EYE VIEW")):
         if not (destino / ".git").exists():
             ej.run(["git", "clone", "--depth", "1", REPO, str(destino)], timeout=180)
+        aplicar_parche(ej, destino)
         ej.run(["npm", "ci"], directorio=destino, timeout=900)
         ej.run(["npm", "run", "doctor"], directorio=destino, timeout=180)
-    ej.escribir(destino.parent / "instalado", "ok\n")
+    ej.escribir(destino.parent / "instalado", VERSION + "\n")
 
 
-def lanzar(ej: Ejecutor, destino: Path, log: Path):
+def lanzar(ej: Ejecutor, destino: Path, log: Path, ajustes: dict | None = None) -> Resultado:
     return ej.run(["npm", "run", "dev", "--", "--port", "4173", "--strictPort",
-                   "--host", "127.0.0.1"], fondo=True, directorio=destino, registro=log)
+                   "--host", "127.0.0.1"], fondo=True, directorio=destino, registro=log,
+                  entorno=entorno_servidor(ajustes or {}))
 
 
 def _proceso() -> psutil.Process | None:
@@ -209,22 +250,41 @@ def _abrir(ctx: typer.Context, kiosko: bool, url: str = URL, si: bool = False) -
         lanzar(ej, destino, log)
         ej.run([*navegador, url], fondo=True)
         return
+    aviso = rutas.estado() / "ojo-aviso"
+    if not aviso.is_file():
+        t.info("Uso ético: consulta únicamente fuentes públicas y respeta sus licencias.")
+        ej.escribir(aviso, "ok\n")
+    t.info("Claves opcionales con ultron ojo clave: Google para ciudades 3D "
+           "fotorrealistas, Cesium ion para terreno y mapas 3D, TomTom para flujo real "
+           "agregado. Sin TomTom, el tráfico es SIMULADO.")
     requerir(ej, navegador[0], "firefox" if kiosko else "xdg-utils")
-    if not (destino.parent / "instalado").is_file():
+    ajustes = config.leer().get("ojo", {})
+    if not isinstance(ajustes, dict):
+        ajustes = {}
+    revision = ajustes.get("revision")
+    proc = _proceso()
+    if proc and (not _instalado(destino)
+                 or jsonio.leer(archivo_estado(), {}).get("revision") != revision):
+        _detener(ej, proc)
+        proc = None
+    if not _instalado(destino):
         t.info("Primera vez: hay que instalar God's Eye View (unos minutos).")
         if not si and not typer.confirm("¿Lo instalo ahora?", default=True):
             raise typer.Exit(2)
         preparar(ej, destino, si=True)
-    if _proceso() is None:
+    if proc is None:
         if _responde():
             fallo("El puerto 4173 ya está ocupado por otro servidor.")
         comprobar_node(ej, si=True)
+        problemas = actualizar_camaras(ej, destino)
+        if problemas:
+            t.info(f"No se pudo actualizar el catálogo de cámaras de {', '.join(problemas)}.")
         log.parent.mkdir(parents=True, exist_ok=True)
-        resultado = lanzar(ej, destino, log)
+        resultado = lanzar(ej, destino, log, ajustes)
         try:
             proc = psutil.Process(int(resultado.salida))
             jsonio.escribir(archivo_estado(), {"pid": proc.pid, "inicio": proc.create_time(),
-                                               "registro": str(log)})
+                                               "registro": str(log), "revision": revision})
         except (ValueError, psutil.Error):
             fallo(f"No se pudo iniciar el servidor. Consulta {log}.")
     animar = animaciones_activas()
@@ -251,21 +311,43 @@ def _abrir(ctx: typer.Context, kiosko: bool, url: str = URL, si: bool = False) -
 SI = typer.Option(False, "--si", help="Sin preguntas (instala lo que falte).")
 CAPAS_OPC = typer.Option(CAPAS_DEFECTO, "--capas",
                          help="Capas al abrir: vuelos, satelites (separadas por comas) o ninguna.")
+CALIDAD = typer.Option(None, "--calidad", help="Calidad gráfica (por defecto, automática).")
 
 
 @app.callback(invoke_without_command=True)
 def entrada(ctx: typer.Context, kiosko: bool = typer.Option(False, "--kiosko"),
-            si: bool = SI, capas: str = CAPAS_OPC) -> None:
+            si: bool = SI, capas: str = CAPAS_OPC, calidad: Calidad | None = CALIDAD) -> None:
     """Abre el globo 3D local con vuelos y satélites en directo."""
     if ctx.invoked_subcommand is None:
-        _abrir(ctx, kiosko, url_vista(capas=capas), si=si)
+        abrir(ctx, kiosko, si, capas, calidad)
 
 
 @app.command("abrir")
 def abrir(ctx: typer.Context, kiosko: bool = typer.Option(False, "--kiosko"),
-          si: bool = SI, capas: str = CAPAS_OPC) -> None:
+          si: bool = SI, capas: str = CAPAS_OPC, calidad: Calidad | None = CALIDAD) -> None:
     """Abre el globo con vuelos y satélites en directo (lo instala si hace falta)."""
-    _abrir(ctx, kiosko, url_vista(capas=capas), si=si)
+    _abrir(ctx, kiosko, url_vista(lat=39.4, alt=1_800_000, capas=capas, calidad=calidad,
+                                cinematica=True), si=si)
+
+
+@app.command("clave")
+def clave(ctx: typer.Context, proveedor: Proveedor, valor: str) -> None:
+    """Guarda una clave opcional para la próxima apertura del globo."""
+    if not valor.strip() or any(not c.isprintable() for c in valor):
+        fallo("Introduce una clave válida.", 2)
+    if ejecutor(ctx).simular:
+        interfaz().info(f"Se guardaría la clave de {proveedor.value}.")
+        return
+    datos = config.leer()
+    ajustes = datos.get("ojo")
+    if not isinstance(ajustes, dict):
+        ajustes = datos["ojo"] = {}
+    ajustes.update({proveedor.value: valor.strip(), "revision": uuid4().hex})
+    try:
+        config.guardar(datos)
+    except OSError:
+        fallo("No se pudo guardar la clave en la configuración.")
+    interfaz().ok(f"Clave de {proveedor.value} guardada para la próxima apertura.")
 
 
 @app.command("instalar")
@@ -278,7 +360,7 @@ def instalar(ctx: typer.Context, si: bool = SI) -> None:
 def estado() -> None:
     """Muestra si el globo está instalado y si su servidor sigue activo."""
     proc = _proceso()
-    mostrar("OJO", {"instalado": (carpeta().parent / "instalado").is_file(),
+    mostrar("OJO", {"instalado": _instalado(carpeta()),
                     "PID": proc.pid if proc else None,
                     "registro": str(rutas.estado() / "ojo.log")})
 
@@ -305,19 +387,25 @@ def actualizar(ctx: typer.Context) -> None:
             fallo("Instala el proyecto con ultron ojo instalar.", 2)
         requerir(ej, "git")
     comprobar_node(ej)
-    ej.run(["git", "pull", "--ff-only"], directorio=destino, timeout=180)
+    quitar_parche(ej, destino)
+    try:
+        ej.run(["git", "pull", "--ff-only"], directorio=destino, timeout=180)
+    except ErrorEjecucion:
+        aplicar_parche(ej, destino)
+        raise
+    ej.borrar(destino.parent / "instalado")
     preparar(ej, destino)
 
 
 @app.command("objetivo")
-def objetivo(ctx: typer.Context, lugar: str) -> None:
+def objetivo(ctx: typer.Context, lugar: str, calidad: Calidad | None = CALIDAD) -> None:
     """Vuela con el globo hasta un lugar o coordenadas, con vuelos y satélites."""
     try:
         lat, lon = map(float, lugar.split(","))
     except ValueError:
         if ejecutor(ctx).simular:
             interfaz().info("Se buscaría el lugar indicado.")
-            _abrir(ctx, False)
+            _abrir(ctx, False, url_vista(calidad=calidad))
             return
         try:
             respuesta = httpx.get("https://geocoding-api.open-meteo.com/v1/search",
@@ -329,4 +417,4 @@ def objetivo(ctx: typer.Context, lugar: str) -> None:
             fallo("No se encontró el lugar. Introduce latitud y longitud separadas por coma.", 2)
     if not (-90 <= lat <= 90 and -180 <= lon <= 180):
         fallo("Coordenadas fuera de rango.", 2)
-    _abrir(ctx, False, url_vista(lat, lon, 80000))
+    _abrir(ctx, False, url_vista(lat, lon, 80000, calidad=calidad))

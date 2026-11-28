@@ -12,6 +12,11 @@ ia:
     (un laboratorio, un CTF).
   temperatura: 0.6
 capas:
+  sesion_grafica:
+    radio: 6
+    titulo_px: 28
+    fuente_konsole: "Monospace,11"
+    splash_ms: 260
   lanzadores: {}
   shell:
     alias:

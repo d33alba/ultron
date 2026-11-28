@@ -10,6 +10,11 @@ ia:
     drivers). Respuestas cortas y con emojis de texto como ⚡ ▶ ★.
   temperatura: 0.8
 capas:
+  sesion_grafica:
+    radio: 12
+    titulo_px: 30
+    fuente_konsole: "Monospace,12"
+    splash_ms: 600
   lanzadores: {}
   shell:
     alias:
@@ -34,7 +39,7 @@ capas:
     tema_gtk: generar
     tema_shell: generar
     brillo: true
-    dock: {dock-position: LEFT, extend-height: true, dock-fixed: true, transparency-mode: FIXED,
+    dock: {dock-position: BOTTOM, extend-height: false, dock-fixed: true, transparency-mode: FIXED,
            background-opacity: 0.55, custom-background-color: true,
            background-color: "#0B0B16", dash-max-icon-size: 44, show-trash: false,
            show-mounts: false, running-indicator-style: DASHES}

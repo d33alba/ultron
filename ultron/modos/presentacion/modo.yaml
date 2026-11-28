@@ -9,6 +9,11 @@ ia:
     concretos de estructura, tiempos y lenguaje corporal.
   temperatura: 0.6
 capas:
+  sesion_grafica:
+    radio: 8
+    titulo_px: 32
+    fuente_konsole: "Monospace,13"
+    splash_ms: 480
   lanzadores: {}
   shell:
     bienvenida: true

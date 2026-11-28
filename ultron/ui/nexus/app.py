@@ -14,7 +14,7 @@ from datetime import datetime
 from typing import Any
 
 from rich.text import Text
-from textual.app import App, ComposeResult
+from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Grid, Horizontal, Vertical, VerticalScroll
 from textual.screen import ModalScreen, Screen
@@ -23,7 +23,10 @@ from textual.widgets.option_list import Option
 
 from ultron import __version__
 from ultron.nucleo import estado, registro
+from ultron.ui import pantalla_pixel
 from ultron.ui import tema as temas
+from ultron.ui.escenas import titulo
+from ultron.ui.fondo import AppPixel, Fondo
 from ultron.ui.nexus import catalogo, vista
 from ultron.ui.nexus.catalogo import Ficha
 
@@ -179,8 +182,12 @@ class Arranque(Screen):
     def pintar(self) -> None:
         t = time.monotonic() - self.t0
         p = self.p
-        self.query_one("#reactor", Static).update(vista.reactor(t * 3, p["primario"],
-                                                                p["borde"]))
+        portada = temas.cargar_tema(estado.modo_activo())
+        if pantalla_pixel.habilitada(portada):
+            entrada = pantalla_pixel.vista(portada, min(80, self.size.width), 10, t)
+        else:
+            entrada = titulo("NEXUS", p["primario"], ancho=self.size.width)
+        self.query_one("#reactor", Static).update(entrada)
         log = Text()
         visibles = int(t / 0.22)
         for nombre, valor, ok in self.lineas[:visibles]:
@@ -192,13 +199,17 @@ class Arranque(Screen):
             log.append("\n  SISTEMAS EN LÍNEA · BIENVENIDO", style=f"bold {p['primario']}")
         self.query_one("#log", Static).update(log)
         if t > 0.22 * len(self.lineas) + 0.9:
-            self.app.switch_screen(self.siguiente)
+            self._continuar()
 
     def on_key(self) -> None:
-        self.app.switch_screen(self.siguiente)
+        self._continuar()
 
     def on_click(self) -> None:
-        self.app.switch_screen(self.siguiente)
+        self._continuar()
+
+    def _continuar(self) -> None:
+        if isinstance(self.app, AppPixel) and self.is_current:
+            self.app.cambiar(self.siguiente)
 
 
 class Hangar(Screen):
@@ -217,8 +228,11 @@ class Hangar(Screen):
         ids = [m.id for m in self.modos]
         self.indice = ids.index(self.activo) if self.activo in ids else 0
         self.t0 = time.monotonic()
+        self._ultimo_reloj = ""
+        self.estrecho = False
 
     def compose(self) -> ComposeResult:
+        yield Fondo()
         yield Static(id="cabecera")
         with Horizontal(id="cuerpo"):
             with Vertical(id="col-modos"):
@@ -244,7 +258,8 @@ class Hangar(Screen):
         t.append(m.nombre, style="bold")
         if m.id == self.activo:
             t.append("  ● activo", style=p["ok"])
-        t.append(f"\n   {m.lema}", style=p["apagado"])
+        if not self.estrecho:
+            t.append(f"\n   {m.lema}", style=p["apagado"])
         return t
 
     def on_mount(self) -> None:
@@ -252,7 +267,10 @@ class Hangar(Screen):
         lista.highlighted = self.indice
         lista.focus()
         self.pintar()
-        self.set_interval(1 / 5, self.animar)
+        if temas.animaciones_activas():
+            self.set_interval(1 / 5, self.animar)
+        else:
+            self.set_interval(1, self._cabecera)
         # los mosaicos de los fondos se calculan una vez en segundo plano y quedan en disco
         import threading
 
@@ -280,40 +298,54 @@ class Hangar(Screen):
         m = self.modos[self.indice]
         p = paleta(m.id)
         holo = self.query_one("#holo", Static)
-        ancho = max(20, min(120, holo.content_size.width or 60))
-        alto = max(6, min(36, holo.content_size.height or 14))
+        ancho = max(1, min(120, holo.content_size.width or 60))
+        alto = max(3, min(36, holo.content_size.height or 14))
         # lo mismo que pone la capa de lanzadores en el escritorio (5 del modo + 2 comunes)
         funciones = [(f.icono, f.titulo) for f in
                      [f for f in catalogo.de_modo(m.id) if f.escritorio][:5]
                      + [f for f in catalogo.comunes() if f.escritorio][:2]]
-        holo.update(vista.maqueta(m, p, ancho, alto, time.monotonic() - self.t0, funciones))
+        t = time.monotonic() - self.t0 if temas.animaciones_activas() else 0.0
+        holo.update(vista.maqueta(m, p, ancho, alto, t, funciones))
+        self._cabecera()
+
+    def _cabecera(self) -> None:
         reloj = datetime.now().strftime("%H:%M:%S")
+        m = self.modos[self.indice]
+        p = paleta(m.id)
+        fps = self.query_one(Fondo).fps if m.id == "gaming" else 0
+        firma = f"{m.id}/{reloj}/{fps}"
+        if firma == self._ultimo_reloj:
+            return
+        self._ultimo_reloj = firma
         if not hasattr(self, "_ia"):
             self._ia = estado_ia()
         ok, ia = self._ia
         cab = Text()
-        cab.append(" ◆ U L T R O N ", style=f"bold {p['fondo']} on {p['primario']}")
-        cab.append("  N E X U S ", style=f"bold {p['primario']}")
-        cab.append(f"   elige en quién se convierte tu ordenador{' ' * 6}",
-                   style=p["apagado"])
+        cab.append(" NEXUS ", style=f"bold {p['fondo']} on {p['primario']}")
+        cab.append(f"  HANGAR   {reloj}   ", style=f"bold {p['texto']}")
+        if fps:
+            cab.append(f"{fps:02d} FPS   ", style=p["acento"])
         cab.append(f"● {ia}   " if ok else f"○ {ia} (pulsa c)   ",
                    style=p["ok"] if ok else p["aviso"])
-        cab.append(reloj, style=f"bold {p['texto']}")
         self.query_one("#cabecera", Static).update(cab)
 
     def pintar(self) -> None:
         m = self.modos[self.indice]
         p = paleta(m.id)
         self.styles.background = p["fondo"]
-        for sel in ("#col-modos", "#col-info", "#holo"):
+        self.query_one(Fondo).elegir(temas.cargar_tema(m.id))
+        for sel in ("#col-modos", "#col-info", "#holo", "#nombre", "#cabecera", "#pie"):
             w = self.query_one(sel)
-            w.styles.border = ("round", p["borde"])
             w.styles.background = p["panel"]
+        for sel in ("#col-modos", "#col-info"):
+            self.query_one(sel).styles.border = ("round", p["borde"])
         self.query_one("#holo").styles.border = ("heavy", p["primario"])
         nombre = Text(justify="center")
-        nombre.append_text(vista.letras_grandes(m.nombre, p["primario"], p["acento"]))
-        nombre.append(f"\n\n«{m.lema}»\n", style=f"italic {p['acento']}")
-        nombre.append(m.descripcion, style=p["texto"])
+        ancho = self.query_one("#nombre", Static).content_size.width or 35
+        nombre.append_text(titulo(m.nombre, p["primario"], ancho=ancho))
+        nombre.append(f"\n«{m.lema}»", style=f"italic {p['acento']}")
+        if not self.estrecho:
+            nombre.append(f"\n{m.descripcion}", style=p["texto"])
         self.query_one("#nombre", Static).update(nombre)
         self.query_one("#info", Static).update(self._info(m, p))
         for b in self.query(Button):
@@ -321,12 +353,29 @@ class Hangar(Screen):
             b.styles.color = p["fondo"] if b.id == "activar" else p["texto"]
             b.styles.border = ("tall", p["primario"] if b.id == "activar" else p["borde"])
         pie = Text()
-        for tecla, que in (("↑↓", "elegir"), ("⏎", "activar"), ("s", "restaurar Ubuntu"),
-                           ("c", "IA"), ("tab", "puente del modo activo"), ("q", "cerrar")):
+        for tecla, que in (("↑↓", "elegir"), ("⏎", "activar"), ("s", "restaurar"),
+                           ("c", "IA"), ("tab", "puente"), ("q", "cerrar")):
             pie.append(f" {tecla} ", style=f"bold {p['fondo']} on {p['acento']}")
-            pie.append(f" {que}   ", style=p["apagado"])
+            pie.append(f" {que} ", style=p["apagado"])
         self.query_one("#pie", Static).update(pie)
         self.animar()
+
+    def on_resize(self) -> None:
+        self.estrecho = self.size.width < 105
+        self.set_class(self.estrecho, "estrecho")
+        self.call_after_refresh(self._ajustar)
+
+    def _ajustar(self) -> None:
+        lista = self.query_one("#modos", OptionList)
+        for i, modo in enumerate(self.modos):
+            lista.replace_option_prompt_at_index(i, self._etiqueta(modo))
+        self.query_one("#restaurar", Button).label = (
+            "↺ Restaurar" if self.estrecho else "↺  Restaurar Ubuntu"
+        )
+        self.query_one("#configurar", Button).label = (
+            "⚙ IA" if self.estrecho else "⚙  Configurar IA"
+        )
+        self.pintar()
 
     def _info(self, m: Any, p: dict[str, str]) -> Text:
         t = Text()
@@ -343,6 +392,8 @@ class Hangar(Screen):
         for f in catalogo.de_modo(m.id)[:9]:
             t.append(f" {f.icono} ", style=p["acento"])
             t.append(f"{f.titulo}\n", style=p["texto"])
+        if self.estrecho:
+            t.append(f"\n{m.descripcion}\n", style=p["texto"])
         t.append("\nTodo se deshace con «Restaurar Ubuntu».", style=p["apagado"])
         return t
 
@@ -359,8 +410,8 @@ class Hangar(Screen):
         self.app.exit(None)
 
     def action_puente(self) -> None:
-        if self.activo:
-            self.app.switch_screen(Puente(self.activo))
+        if self.activo and isinstance(self.app, AppPixel):
+            self.app.cambiar(Puente(self.activo))
 
 
 class Puente(Screen):
@@ -579,7 +630,8 @@ class Puente(Screen):
         (tarjetas[0] if tarjetas else mando).focus()
 
     def action_hangar(self) -> None:
-        self.app.switch_screen(Hangar())
+        if isinstance(self.app, AppPixel):
+            self.app.cambiar(Hangar())
 
     def action_restaurar(self) -> None:
         self.app.exit(("ejecutar", ["salir"]))
@@ -822,6 +874,14 @@ class PedirIA(ModalScreen):
 
 CSS = """
 Screen { layout: vertical; }
+Hangar { layers: paisaje base; overflow: hidden hidden; }
+Hangar > #cabecera, Hangar > #cuerpo, Hangar > #pie, Hangar > #botones { layer: base; }
+Hangar > #cuerpo { margin: 6 1 1 1; }
+Hangar.estrecho > #cuerpo { margin: 5 1 0 1; }
+Hangar.estrecho #col-modos { width: 21; }
+Hangar.estrecho #col-info { width: 23; padding: 0 1; }
+Hangar.estrecho #botones Button { min-width: 0; width: 1fr; margin: 0; }
+Hangar.estrecho #nombre { max-height: 7; }
 #cabecera { height: 1; margin: 1 1 0 1; }
 #pie { dock: bottom; height: 1; margin: 0 1; }
 #cuerpo { height: 1fr; margin: 0 1; }
@@ -831,7 +891,7 @@ Screen { layout: vertical; }
 #col-modos { width: 30; }
 #modos { height: 1fr; background: transparent; border: none; }
 #col-holo { width: 1fr; margin: 0 1; }
-#holo { height: 1fr; min-height: 8; }
+#holo { height: 1fr; min-height: 5; }
 #nombre { height: auto; content-align: center middle; margin-top: 1; }
 #col-info { width: 44; padding: 1 1; }
 #botones { height: 3; margin: 0 1; align: center middle; }
@@ -855,7 +915,7 @@ Formulario, Explorador, PedirIA { align: center middle; background: rgba(0,0,0,0
 """
 
 
-class Nexus(App):
+class Nexus(AppPixel):
     CSS = CSS
     TITLE = "ULTRON NEXUS"
 
@@ -871,7 +931,7 @@ class Nexus(App):
             destino: Screen = Hangar()
         else:
             destino = Puente(activo, self.aviso)
-        if self.arranque:
+        if self.arranque and temas.animaciones_activas():
             self.push_screen(Arranque(destino, paleta(activo)))
         else:
             self.push_screen(destino)

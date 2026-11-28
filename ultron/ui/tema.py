@@ -120,7 +120,7 @@ class Tema:
     @property
     def consola(self) -> Console:
         if self._consola is None:
-            sin_color = OPCIONES.sin_color or bool(os.environ.get("NO_COLOR"))
+            sin_color = OPCIONES.sin_color or "NO_COLOR" in os.environ
             self._consola = Console(
                 theme=self.theme(),
                 color_system=None if sin_color else "auto",

@@ -173,8 +173,12 @@ def test_ojo_version_y_comandos(tmp_path):
     carpeta = tmp_path / "ojo" / "gods-eye-view"
     ojo.preparar(falso, carpeta)
     ojo.lanzar(falso, carpeta, tmp_path / "ojo.log")
-    assert falso.historial[:4] == [
+    assert falso.historial[:2] == [
         ["node", "--version"], ["git", "clone", "--depth", "1", ojo.REPO, str(carpeta)],
+    ]
+    parche = str(carpeta / ".git" / "ultron-ojo.patch")
+    assert falso.historial[2:7] == [
+        ["#escribir", parche], ["git", "apply", "--check", parche], ["git", "apply", parche],
         ["npm", "ci"], ["npm", "run", "doctor"],
     ]
     assert falso.historial[-1][:6] == ["npm", "run", "dev", "--", "--port", "4173"]

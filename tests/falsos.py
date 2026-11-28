@@ -90,6 +90,7 @@ class EjecutorFalso(Ejecutor):
     def run(
         self, cmd, *, sudo=False, check=True, entrada=None, timeout=60,
         fondo=False, directorio=None, registro=None, interactivo=False,
+        entorno=None,
     ):
         cmd = [str(c) for c in cmd]
         if sudo:

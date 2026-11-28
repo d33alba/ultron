@@ -10,6 +10,11 @@ ia:
     Respuestas breves y ordenadas.
   temperatura: 0.4
 capas:
+  sesion_grafica:
+    radio: 4
+    titulo_px: 24
+    fuente_konsole: "Monospace,11"
+    splash_ms: 850
   lanzadores: {}
   shell:
     alias:

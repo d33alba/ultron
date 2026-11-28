@@ -10,6 +10,11 @@ ia:
     privacidad, la IA debería ser local.
   temperatura: 0.5
 capas:
+  sesion_grafica:
+    radio: 3
+    titulo_px: 22
+    fuente_konsole: "Monospace,10"
+    splash_ms: 360
   lanzadores: {}
   shell:
     historial: false
