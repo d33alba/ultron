@@ -553,7 +553,7 @@ def _resumen(objetivo: str, puntuacion: int, hallazgos: list[tuple[str, str]],
 
 
 def ruta_operaciones() -> Path:
-    return rutas.datos() / "operaciones"
+    return rutas.documentos() / "operaciones"
 
 
 def _decir(texto: str) -> None:

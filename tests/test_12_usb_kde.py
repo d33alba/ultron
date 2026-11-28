@@ -190,3 +190,27 @@ def test_plasma_no_pide_el_esquema_que_ya_esta(monkeypatch):
     capa.aplicar(registro.obtener("netanyahu").capas["escritorio"])
     capa.restaurar({"colores": "BreezeDark"})
     assert not ej.comandos("plasma-apply-colorscheme")
+
+
+def test_informes_fuera_de_carpetas_ocultas(monkeypatch, tmp_path):
+    """Firefox snap no lee ~/.local: los informes van a la carpeta de documentos."""
+    monkeypatch.setattr(rutas.sys, "platform", "linux")
+    monkeypatch.delenv("ULTRON_DOCUMENTOS", raising=False)
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / ".config"))
+    (tmp_path / ".config").mkdir()
+    (tmp_path / ".config/user-dirs.dirs").write_text(
+        'XDG_DOCUMENTS_DIR="$HOME/Mis docs"\n', encoding="utf-8")
+    assert rutas.documentos() == tmp_path / "Mis docs" / "Ultron"
+    (tmp_path / ".config/user-dirs.dirs").unlink()
+    (tmp_path / "Documentos").mkdir()
+    assert rutas.documentos() == tmp_path / "Documentos" / "Ultron"
+    assert not any(p.startswith(".") for p in rutas.documentos().relative_to(tmp_path).parts)
+
+
+def test_huella_guarda_en_documentos(monkeypatch, tmp_path):
+    from ultron.modos.netanyahu.funciones import comun
+
+    monkeypatch.setenv("ULTRON_DOCUMENTOS", str(tmp_path / "docs"))
+    carpeta = comun.guardar("huella-yo", {"a": 1}, Ejecutor())
+    assert carpeta is not None and carpeta.parent == tmp_path / "docs" / "operaciones"

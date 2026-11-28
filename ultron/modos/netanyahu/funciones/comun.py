@@ -82,7 +82,7 @@ def mostrar(titulo: str, datos: dict, crudo: bool = False) -> None:
 def guardar(objetivo: str, datos: dict, ej: Ejecutor) -> Path | None:
     if ej.simular:
         return None
-    raiz = rutas.asegurar(rutas.datos() / "operaciones")
+    raiz = rutas.asegurar(rutas.documentos() / "operaciones")
     nombre = re.sub(r"[^a-zA-Z0-9_-]", "-", objetivo)[:70]
     fecha = datetime.now().strftime("%Y%m%d-%H%M%S")
     carpeta = Path(tempfile.mkdtemp(prefix=f"{fecha}-{nombre}-", dir=raiz))

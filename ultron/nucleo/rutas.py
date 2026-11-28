@@ -59,6 +59,37 @@ def xdg_config_raiz() -> Path:
     return Path(valor) if valor else home() / ".config"
 
 
+def documentos() -> Path:
+    """Carpeta visible para lo que se abre en el navegador (~/Documentos/Ultron).
+
+    Firefox snap (Ubuntu 22.04+) no puede leer carpetas ocultas como ~/.local, así que los
+    informes HTML van a la carpeta de documentos del usuario.
+    """
+    if os.environ.get("ULTRON_DOCUMENTOS"):
+        return Path(os.environ["ULTRON_DOCUMENTOS"])
+    if sys.platform == "win32":
+        return home() / ".ultron-dev" / "documentos"
+    return _dir_documentos() / "Ultron"
+
+
+def _dir_documentos() -> Path:
+    """XDG_DOCUMENTS_DIR de user-dirs.dirs, o ~/Documentos, ~/Documents o el home."""
+    try:
+        texto = (xdg_config_raiz() / "user-dirs.dirs").read_text(encoding="utf-8")
+    except OSError:
+        texto = ""
+    for linea in texto.splitlines():
+        if linea.startswith("XDG_DOCUMENTS_DIR="):
+            valor = linea.split("=", 1)[1].strip().strip('"').replace("$HOME", str(home()))
+            ruta = Path(valor)
+            if ruta != home() and ruta.is_absolute():
+                return ruta
+    for nombre in ("Documentos", "Documents"):
+        if (home() / nombre).is_dir():
+            return home() / nombre
+    return home()
+
+
 def paquete() -> Path:
     return Path(__file__).resolve().parent.parent
 
